@@ -134,6 +134,55 @@ function showView(view) {
   dashboardView.classList.remove("hidden");
 }
 
+function applyNavigationState(state = { view: "dashboard" }) {
+  if (usingSheets && !activeStudioPin) {
+    showView("pin");
+    return;
+  }
+
+  const targetView = state?.view || "dashboard";
+
+  if (targetView === "detail" && state.recordId) {
+    selectedRecordId = state.recordId;
+    isDetailEditMode = false;
+    renderEventButtons(searchInput.value);
+    renderSelectedRecord();
+    showView("view");
+    return;
+  }
+
+  if (targetView === "view") {
+    selectedRecordId = null;
+    isDetailEditMode = false;
+    renderEventButtons(searchInput.value);
+    renderSelectedRecord();
+    showView("view");
+    return;
+  }
+
+  if (targetView === "add") {
+    showView("add");
+    return;
+  }
+
+  selectedRecordId = null;
+  isDetailEditMode = false;
+  showView("dashboard");
+}
+
+function navigateTo(state, { replace = false } = {}) {
+  applyNavigationState(state);
+  if (!window.history || typeof window.history.pushState !== "function") {
+    return;
+  }
+
+  if (replace) {
+    window.history.replaceState(state, "");
+  } else {
+    window.history.pushState(state, "");
+  }
+}
+
 function getStoredPin() {
   try {
     return sessionStorage.getItem(PIN_SESSION_KEY) || localStorage.getItem(PIN_LOCAL_KEY) || "";
@@ -190,6 +239,9 @@ function lockStudioView(errorMessage = "") {
   setPinError(errorMessage);
   studioPinInput.value = "";
   showView("pin");
+  if (window.history && typeof window.history.replaceState === "function") {
+    window.history.replaceState({ view: "pin" }, "");
+  }
 }
 
 function parseMoney(value) {
@@ -759,10 +811,7 @@ function renderEventButtons(searchText = "") {
 
     button.append(name, date, location, statusWrap);
     button.addEventListener("click", () => {
-      selectedRecordId = record.id;
-      isDetailEditMode = false;
-      renderEventButtons(searchInput.value);
-      renderSelectedRecord();
+      navigateTo({ view: "detail", recordId: record.id });
     });
 
     eventButtonsContainer.appendChild(button);
@@ -1024,21 +1073,42 @@ sideModeInput.addEventListener("change", () => updateSideModeUI("add", sideModeI
 detailSideModeInput.addEventListener("change", () => updateSideModeUI("detail", detailSideModeInput.value));
 
 resetBtn.addEventListener("click", resetForm);
-openAddEventBtn.addEventListener("click", () => showView("add"));
+openAddEventBtn.addEventListener("click", () => navigateTo({ view: "add" }));
 openViewEventsBtn.addEventListener("click", () => {
-  selectedRecordId = null;
-  isDetailEditMode = false;
-  renderEventButtons(searchInput.value);
-  renderSelectedRecord();
-  showView("view");
+  navigateTo({ view: "view", recordId: null });
 });
-backToDashboardFromAddBtn.addEventListener("click", () => showView("dashboard"));
-backToDashboardFromViewBtn.addEventListener("click", () => showView("dashboard"));
+backToDashboardFromAddBtn.addEventListener("click", () => {
+  if (window.history.state && window.history.state.view === "add") {
+    window.history.back();
+    return;
+  }
+  navigateTo({ view: "dashboard" }, { replace: true });
+});
+backToDashboardFromViewBtn.addEventListener("click", () => {
+  if (window.history.state && window.history.state.view === "view") {
+    window.history.back();
+    return;
+  }
+  navigateTo({ view: "dashboard" }, { replace: true });
+});
 backToEventsListBtn.addEventListener("click", () => {
-  selectedRecordId = null;
-  isDetailEditMode = false;
-  renderEventButtons(searchInput.value);
-  renderSelectedRecord();
+  if (window.history.state && window.history.state.view === "detail") {
+    window.history.back();
+    return;
+  }
+  navigateTo({ view: "view", recordId: null }, { replace: true });
+});
+
+window.addEventListener("popstate", (event) => {
+  if (usingSheets && !activeStudioPin) {
+    showView("pin");
+    if (window.history && typeof window.history.replaceState === "function") {
+      window.history.replaceState({ view: "pin" }, "");
+    }
+    return;
+  }
+
+  applyNavigationState(event.state || { view: "dashboard" });
 });
 
 function escapeCsvCell(value) {
@@ -1145,7 +1215,7 @@ customerForm.addEventListener("submit", async (event) => {
     renderEventButtons(searchInput.value);
     renderSelectedRecord();
     resetForm();
-    showView("view");
+    navigateTo({ view: "view", recordId: null }, { replace: true });
   } catch (error) {
     if (error && error.isAuthError) {
       lockStudioView(error.message);
@@ -1235,6 +1305,10 @@ detailDeleteBtn.addEventListener("click", async () => {
     } else {
       removeRecordInState(selectedRecordId);
     }
+
+    if (window.history.state && window.history.state.view === "detail") {
+      window.history.replaceState({ view: "view", recordId: null }, "");
+    }
   } catch (error) {
     if (error && error.isAuthError) {
       lockStudioView(error.message);
@@ -1275,7 +1349,7 @@ pinUnlockForm.addEventListener("submit", async (event) => {
     updateDashboardStats();
     renderEventButtons();
     renderSelectedRecord();
-    showView("dashboard");
+    navigateTo({ view: "dashboard" }, { replace: true });
   } catch (error) {
     clearStoredPin();
     setPinError(error?.message || "Unable to verify Studio PIN. Check your Google Sheets Web App URL.");
@@ -1322,7 +1396,7 @@ async function initialize() {
   updateDashboardStats();
   renderEventButtons();
   renderSelectedRecord();
-  showView("dashboard");
+  navigateTo({ view: "dashboard" }, { replace: true });
 }
 
 initialize();
