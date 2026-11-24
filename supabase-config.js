@@ -1,5 +1,4 @@
-// Replace with your Supabase project credentials.
 window.SUPABASE_CONFIG = {
-  url: "https://YOUR_PROJECT_REF.supabase.co",
-  anonKey: "YOUR_SUPABASE_ANON_KEY",
+  url: "https://mfnvtwnwifbzjwrgcbdl.supabase.co",
+  anonKey: "sb_publishable_Y4WcdNBNqKj-bCfcqV3f7Q_P3Fmgi2o",
 };
