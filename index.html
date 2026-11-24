@@ -1,295 +1,575 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vivah Premium Wedding — Client Booking Register</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <div class="ambient-bg" aria-hidden="true"></div>
-    <main class="app-shell">
-      <header class="hero">
-        <div class="hero-brand">
-          <div class="hero-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vivah Premium Wedding — Client Booking Register</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <div class="ambient-bg" aria-hidden="true"></div>
+  <main class="app-shell">
+    <header class="hero">
+      <div class="hero-brand">
+        <div class="hero-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+            <circle cx="12" cy="13" r="4" />
+          </svg>
+        </div>
+        <div>
+          <p class="eyebrow">Client Booking Register</p>
+          <h1>Vivah Premium Wedding</h1>
+        </div>
+      </div>
+      <p class="subtitle">Centralized management for client bookings, event schedules, crew assignments, and payment
+        tracking.</p>
+    </header>
+
+    <section class="panel" id="dashboardView">
+      <div class="panel-header">
+        <div>
+          <h2>Studio Overview</h2>
+          <p class="subtitle">Monitor upcoming bookings, outstanding balances, and studio operations.</p>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <article class="stat-card stat-total">
+          <div class="stat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           </div>
-          <div>
-            <p class="eyebrow">Client Booking Register</p>
-            <h1>Vivah Premium Wedding</h1>
+          <div class="stat-copy">
+            <p>Total Events</p>
+            <strong id="statTotalEvents">0</strong>
           </div>
-        </div>
-        <p class="subtitle">Centralized management for client bookings, event schedules, crew assignments, and payment tracking.</p>
-      </header>
+        </article>
 
-      <section class="panel" id="dashboardView">
-        <div class="panel-header">
-          <div>
-            <h2>Studio Overview</h2>
-            <p class="subtitle">Monitor upcoming bookings, outstanding balances, and studio operations.</p>
-          </div>
-        </div>
-
-        <div class="stats-grid">
-          <article class="stat-card stat-total">
-            <div class="stat-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-            </div>
-            <div class="stat-copy">
-              <p>Total Events</p>
-              <strong id="statTotalEvents">0</strong>
-            </div>
-          </article>
-
-          <article class="stat-card stat-upcoming">
-            <div class="stat-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-            </div>
-            <div class="stat-copy">
-              <p>Upcoming Events</p>
-              <strong id="statUpcomingEvents">0</strong>
-            </div>
-          </article>
-
-          <article class="stat-card stat-due">
-            <div class="stat-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-            </div>
-            <div class="stat-copy">
-              <p>Pending Payments</p>
-              <strong id="statDueEvents">0</strong>
-            </div>
-          </article>
-        </div>
-
-        <div class="dashboard-grid">
-          <button type="button" id="openViewEvents" class="dashboard-card">
-            <div class="dash-card-top">
-              <span class="dash-label">Browse Register</span>
-              <span class="dash-arrow" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </span>
-            </div>
-            <h3>View Events</h3>
-            <p>Search client records, review event schedules, update crew details, and track balances.</p>
-          </button>
-
-          <button type="button" id="openAddEvent" class="dashboard-card dashboard-card-primary">
-            <div class="dash-card-top">
-              <span class="dash-label">New Booking</span>
-              <span class="dash-arrow" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-              </span>
-            </div>
-            <h3>Add New Event</h3>
-            <p>Register a new client booking with event dates, team assignments, and payment terms.</p>
-          </button>
-        </div>
-      </section>
-
-      <section class="panel hidden" id="addEventView">
-        <div class="section-head">
-          <div>
-            <p class="section-kicker">New Client Record</p>
-            <h2>Add New Event</h2>
-          </div>
-          <button type="button" id="backToDashboardFromAdd" class="btn btn-ghost">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="15 18 9 12 15 6" />
+        <article class="stat-card stat-upcoming">
+          <div class="stat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+              stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
             </svg>
-            Dashboard
-          </button>
+          </div>
+          <div class="stat-copy">
+            <p>Upcoming Events</p>
+            <strong id="statUpcomingEvents">0</strong>
+          </div>
+        </article>
+
+        <article class="stat-card stat-due">
+          <div class="stat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+          </div>
+          <div class="stat-copy">
+            <p>Pending Payments</p>
+            <strong id="statDueEvents">0</strong>
+          </div>
+        </article>
+      </div>
+
+      <div class="dashboard-grid">
+        <button type="button" id="openViewEvents" class="dashboard-card">
+          <div class="dash-card-top">
+            <span class="dash-label">Browse Register</span>
+            <span class="dash-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </span>
+          </div>
+          <h3>View Events</h3>
+          <p>Search client records, review event schedules, update crew details, and track balances.</p>
+        </button>
+
+        <button type="button" id="openAddEvent" class="dashboard-card dashboard-card-primary">
+          <div class="dash-card-top">
+            <span class="dash-label">New Booking</span>
+            <span class="dash-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </span>
+          </div>
+          <h3>Add New Event</h3>
+          <p>Register a new client booking with event dates, team assignments, and payment terms.</p>
+        </button>
+      </div>
+    </section>
+
+    <section class="panel hidden" id="addEventView">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">New Client Record</p>
+          <h2>Add New Event</h2>
+        </div>
+        <button type="button" id="backToDashboardFromAdd" class="btn btn-ghost">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Dashboard
+        </button>
+      </div>
+
+      <form id="customerForm" class="form-grid form-sections-layout">
+        <div class="form-section full-width">
+          <div class="form-section-head">
+            <h3>Client Details</h3>
+            <p>Primary contact information and booking confirmation status.</p>
+          </div>
+          <div class="form-section-grid form-section-grid-three">
+            <label>
+              <span class="label-text">Customer Name</span>
+              <input type="text" id="customerName" placeholder="e.g. Aarav &amp; Diya" required />
+            </label>
+
+            <label>
+              <span class="label-text">Booking Status</span>
+              <select id="bookingStatus" required>
+                <option value="pending" selected>Pending</option>
+                <option value="completed">Completed</option>
+              </select>
+            </label>
+
+            <label>
+              <span class="label-text">Phone Number</span>
+              <input type="tel" id="phoneNumber" placeholder="e.g. 9876543210" required />
+            </label>
+          </div>
         </div>
 
-        <form id="customerForm" class="form-grid form-sections-layout">
-          <div class="form-section full-width">
-            <div class="form-section-head">
-              <h3>Client &amp; Venue</h3>
-              <p>Primary contact information and booking confirmation status.</p>
-            </div>
-            <div class="form-section-grid">
-              <label>
-                <span class="label-text">Customer Name</span>
-                <input type="text" id="customerName" placeholder="e.g. Aarav &amp; Diya" required />
-              </label>
-
-              <label>
-                <span class="label-text">Booking Status</span>
-                <select id="bookingStatus" required>
-                  <option value="pending" selected>Pending</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </label>
-
-              <label>
-                <span class="label-text">Phone Number</span>
-                <input type="tel" id="phoneNumber" placeholder="e.g. 9876543210" required />
-              </label>
-
-              <label class="full-width">
-                <span class="label-text">Event Location / Venue</span>
-                <input type="text" id="eventLocation" placeholder="Hotel, resort, or city" required />
-              </label>
-            </div>
+        <div class="form-section full-width">
+          <div class="form-section-head">
+            <h3>Event Schedule &amp; Venues</h3>
+            <p>Ceremony dates, individual venues, and any additional functions.</p>
           </div>
-
-          <div class="form-section full-width">
-            <div class="form-section-head">
-              <h3>Event Schedule</h3>
-              <p>Main ceremony dates and any additional pre/post functions.</p>
-            </div>
-            <div class="form-section-grid form-section-grid-three">
+          <div class="form-section-grid">
+            <div class="full-width schedule-pair">
               <label>
                 <span class="label-text">Wedding Date</span>
                 <input type="date" id="weddingDate" />
               </label>
 
               <label>
+                <span class="label-text">Wedding Location</span>
+                <input type="text" id="weddingLocation" placeholder="Venue for wedding" />
+              </label>
+            </div>
+
+            <div class="full-width schedule-pair">
+              <label>
                 <span class="label-text">Pre-wedding Date</span>
                 <input type="date" id="preWeddingDate" />
               </label>
 
               <label>
+                <span class="label-text">Pre-wedding Location</span>
+                <input type="text" id="preWeddingLocation" placeholder="Venue for pre-wedding" />
+              </label>
+            </div>
+
+            <div class="full-width schedule-pair">
+              <label>
                 <span class="label-text">Reception Date</span>
                 <input type="date" id="receptionDate" />
               </label>
 
+              <label>
+                <span class="label-text">Reception Location</span>
+                <input type="text" id="receptionLocation" placeholder="Venue for reception" />
+              </label>
+            </div>
+
+            <div class="full-width nested-panel">
+              <div class="nested-header">
+                <div>
+                  <h4>Extra Function Dates &amp; Locations</h4>
+                  <p class="nested-sub">Haldi, Sangeet, Mehendi, Engagement with date and venue.</p>
+                </div>
+                <button type="button" id="addFunctionBtn" class="btn btn-soft">+ Add Function</button>
+              </div>
+              <div class="function-row-labels" aria-hidden="true">
+                <span>Function Name</span>
+                <span>Date</span>
+                <span>Location / Venue</span>
+                <span></span>
+              </div>
+              <div id="functionsContainer" class="function-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section full-width">
+          <div class="form-section-head">
+            <h3>Coverage &amp; Crew Allocation</h3>
+            <p>Assign team lead, photographers, videographers, and support crew.</p>
+          </div>
+          <div class="form-section-grid">
+            <label>
+              <span class="label-text">Coverage Type</span>
+              <select id="sideMode">
+                <option value="combined" selected>Combined</option>
+                <option value="single">Single Side</option>
+              </select>
+            </label>
+
+            <label>
+              <span class="label-text">Team Lead Name</span>
+              <input type="text" id="teamLeadName" placeholder="Lead coordinator or photographer" />
+            </label>
+
+            <div class="full-width grid-two" id="combinedTeamFields">
+              <label>
+                <span class="label-text">Bride Side Photographer</span>
+                <input type="text" id="brideSidePhotographer" />
+              </label>
+
+              <label>
+                <span class="label-text">Bride Side Videographer</span>
+                <input type="text" id="brideSideVideographer" />
+              </label>
+
+              <label>
+                <span class="label-text">Groom Side Photographer</span>
+                <input type="text" id="groomSidePhotographer" />
+              </label>
+
+              <label>
+                <span class="label-text">Groom Side Videographer</span>
+                <input type="text" id="groomSideVideographer" />
+              </label>
+            </div>
+
+            <div class="full-width grid-two hidden" id="singleTeamFields">
+              <label>
+                <span class="label-text">Photographer</span>
+                <input type="text" id="singleSidePhotographer" />
+              </label>
+
+              <label>
+                <span class="label-text">Videographer</span>
+                <input type="text" id="singleSideVideographer" />
+              </label>
+            </div>
+
+            <label class="full-width">
+              <span class="label-text">Other Crew Members</span>
+              <textarea id="otherCrewMembers" rows="2"
+                placeholder="Assistant photographers, drone operator, editor, etc."></textarea>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section full-width">
+          <div class="form-section-head">
+            <h3>Requirements &amp; Notes</h3>
+            <p>Deliverable specifications, album preferences, and scheduling notes.</p>
+          </div>
+          <div class="form-section-grid">
+            <label class="full-width">
+              <span class="label-text">Other Requirements</span>
+              <textarea id="additionalRequirements" rows="3"
+                placeholder="Deliverables, album specifications, timing notes..."></textarea>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section full-width">
+          <div class="form-section-head">
+            <h3>Payment &amp; Delivery Status</h3>
+            <p>Package pricing, advance received, calculated balance due, and production status.</p>
+          </div>
+          <div class="form-section-grid">
+            <label>
+              <span class="label-text">Package Amount (INR)</span>
+              <input type="number" id="packageAmount" min="0" step="0.01" placeholder="0.00" required />
+            </label>
+
+            <label>
+              <span class="label-text">Advance Received (INR)</span>
+              <input type="number" id="advanceAmount" min="0" step="0.01" placeholder="0.00" />
+            </label>
+
+            <label class="due-field">
+              <span class="label-text">Due Amount (Auto)</span>
+              <input type="number" id="dueAmount" min="0" step="0.01" readonly />
+            </label>
+
+            <label>
+              <span class="label-text">Work Status</span>
+              <select id="workStatus">
+                <option value="pending" selected>Pending</option>
+                <option value="in progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="full-width actions form-footer-bar">
+          <button class="btn btn-ghost" type="button" id="resetBtn">Reset Form</button>
+          <button class="btn btn-primary" type="submit">Save Customer</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel hidden" id="viewEventsView">
+      <div class="list-header">
+        <div class="list-title-group">
+          <button type="button" id="backToDashboardFromView" class="btn btn-ghost">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Dashboard
+          </button>
+          <div>
+            <p class="section-kicker">Client Register</p>
+            <h2>All Events</h2>
+          </div>
+        </div>
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input type="search" id="searchInput" placeholder="Search by name, phone, location..." />
+        </div>
+      </div>
+
+      <div id="eventsListView" class="events-list-view">
+        <section class="events-list-pane">
+          <div id="emptyState" class="empty-state">No customer records yet.</div>
+          <div id="eventButtonsContainer" class="event-buttons"></div>
+        </section>
+      </div>
+
+      <section class="event-detail-pane hidden" id="eventDetailPane">
+        <div class="detail-nav-bar">
+          <button type="button" id="backToEventsListBtn" class="btn btn-ghost">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to Events
+          </button>
+        </div>
+
+        <form id="eventDetailForm" class="form-grid form-sections-layout hidden">
+          <div class="full-width detail-toolbar">
+            <div class="detail-title-wrap">
+              <span class="record-meta mode-pill" id="detailViewHint">View mode</span>
+              <h3 id="detailEventTitle" class="detail-event-title">Event Details</h3>
+            </div>
+            <div class="detail-toolbar-actions">
+              <button type="button" id="detailEditBtn" class="btn btn-soft">Edit Details</button>
+              <button type="button" id="detailCancelBtn" class="btn btn-ghost hidden">Cancel</button>
+              <button type="submit" id="detailSaveBtn" class="btn btn-primary hidden">Save Changes</button>
+            </div>
+          </div>
+
+          <div class="form-section full-width">
+            <div class="form-section-head">
+              <h4>Client Details</h4>
+            </div>
+            <div class="form-section-grid form-section-grid-three">
+              <label>
+                <span class="label-text">Customer Name</span>
+                <input type="text" id="detailCustomerName" required />
+              </label>
+
+              <label>
+                <span class="label-text">Booking Status</span>
+                <select id="detailBookingStatus" required>
+                  <option value="pending">Pending</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </label>
+
+              <label>
+                <span class="label-text">Phone Number</span>
+                <input type="tel" id="detailPhoneNumber" required />
+              </label>
+            </div>
+          </div>
+
+          <div class="form-section full-width">
+            <div class="form-section-head">
+              <h4>Event Schedule &amp; Venues</h4>
+            </div>
+            <div class="form-section-grid">
+              <div class="full-width schedule-pair">
+                <label>
+                  <span class="label-text">Wedding Date</span>
+                  <input type="date" id="detailWeddingDate" />
+                </label>
+
+                <label>
+                  <span class="label-text">Wedding Location</span>
+                  <input type="text" id="detailWeddingLocation" />
+                </label>
+              </div>
+
+              <div class="full-width schedule-pair">
+                <label>
+                  <span class="label-text">Pre-wedding Date</span>
+                  <input type="date" id="detailPreWeddingDate" />
+                </label>
+
+                <label>
+                  <span class="label-text">Pre-wedding Location</span>
+                  <input type="text" id="detailPreWeddingLocation" />
+                </label>
+              </div>
+
+              <div class="full-width schedule-pair">
+                <label>
+                  <span class="label-text">Reception Date</span>
+                  <input type="date" id="detailReceptionDate" />
+                </label>
+
+                <label>
+                  <span class="label-text">Reception Location</span>
+                  <input type="text" id="detailReceptionLocation" />
+                </label>
+              </div>
+
               <div class="full-width nested-panel">
                 <div class="nested-header">
-                  <div>
-                    <h4>Extra Function Dates</h4>
-                    <p class="nested-sub">Haldi, Sangeet, Mehendi, Engagement, etc.</p>
-                  </div>
-                  <button type="button" id="addFunctionBtn" class="btn btn-soft">+ Add Function</button>
+                  <h4>Extra Function Dates &amp; Locations</h4>
+                  <button type="button" id="detailAddFunctionBtn" class="btn btn-soft">+ Add Function</button>
                 </div>
-                <div id="functionsContainer" class="function-list"></div>
+                <div class="function-row-labels" aria-hidden="true">
+                  <span>Function Name</span>
+                  <span>Date</span>
+                  <span>Location / Venue</span>
+                  <span></span>
+                </div>
+                <div id="detailFunctionsContainer" class="function-list"></div>
               </div>
             </div>
           </div>
 
           <div class="form-section full-width">
             <div class="form-section-head">
-              <h3>Coverage &amp; Crew Allocation</h3>
-              <p>Assign team lead, photographers, videographers, and support crew.</p>
+              <h4>Coverage &amp; Crew</h4>
             </div>
             <div class="form-section-grid">
               <label>
                 <span class="label-text">Coverage Type</span>
-                <select id="sideMode">
-                  <option value="combined" selected>Combined</option>
+                <select id="detailSideMode">
+                  <option value="combined">Combined</option>
                   <option value="single">Single Side</option>
                 </select>
               </label>
 
               <label>
                 <span class="label-text">Team Lead Name</span>
-                <input type="text" id="teamLeadName" placeholder="Lead coordinator or photographer" />
+                <input type="text" id="detailTeamLeadName" />
               </label>
 
-              <div class="full-width grid-two" id="combinedTeamFields">
+              <div class="full-width grid-two" id="detailCombinedTeamFields">
                 <label>
                   <span class="label-text">Bride Side Photographer</span>
-                  <input type="text" id="brideSidePhotographer" />
+                  <input type="text" id="detailBrideSidePhotographer" />
                 </label>
 
                 <label>
                   <span class="label-text">Bride Side Videographer</span>
-                  <input type="text" id="brideSideVideographer" />
+                  <input type="text" id="detailBrideSideVideographer" />
                 </label>
 
                 <label>
                   <span class="label-text">Groom Side Photographer</span>
-                  <input type="text" id="groomSidePhotographer" />
+                  <input type="text" id="detailGroomSidePhotographer" />
                 </label>
 
                 <label>
                   <span class="label-text">Groom Side Videographer</span>
-                  <input type="text" id="groomSideVideographer" />
+                  <input type="text" id="detailGroomSideVideographer" />
                 </label>
               </div>
 
-              <div class="full-width grid-two hidden" id="singleTeamFields">
+              <div class="full-width grid-two hidden" id="detailSingleTeamFields">
                 <label>
                   <span class="label-text">Photographer</span>
-                  <input type="text" id="singleSidePhotographer" />
+                  <input type="text" id="detailSingleSidePhotographer" />
                 </label>
 
                 <label>
                   <span class="label-text">Videographer</span>
-                  <input type="text" id="singleSideVideographer" />
+                  <input type="text" id="detailSingleSideVideographer" />
                 </label>
               </div>
 
               <label class="full-width">
                 <span class="label-text">Other Crew Members</span>
-                <textarea id="otherCrewMembers" rows="2" placeholder="Assistant photographers, drone operator, editor, etc."></textarea>
+                <textarea id="detailOtherCrewMembers" rows="2"></textarea>
               </label>
             </div>
           </div>
 
           <div class="form-section full-width">
             <div class="form-section-head">
-              <h3>Requirements &amp; Notes</h3>
-              <p>Deliverable specifications, album preferences, and scheduling notes.</p>
+              <h4>Requirements &amp; Notes</h4>
             </div>
             <div class="form-section-grid">
               <label class="full-width">
                 <span class="label-text">Other Requirements</span>
-                <textarea id="additionalRequirements" rows="3" placeholder="Deliverables, album specifications, timing notes..."></textarea>
+                <textarea id="detailAdditionalRequirements" rows="3"></textarea>
               </label>
             </div>
           </div>
 
           <div class="form-section full-width">
             <div class="form-section-head">
-              <h3>Payment &amp; Delivery Status</h3>
-              <p>Package pricing, advance received, calculated balance due, and production status.</p>
+              <h4>Payment &amp; Delivery Status</h4>
             </div>
             <div class="form-section-grid">
               <label>
                 <span class="label-text">Package Amount (INR)</span>
-                <input type="number" id="packageAmount" min="0" step="0.01" placeholder="0.00" required />
+                <input type="number" id="detailPackageAmount" min="0" step="0.01" required />
               </label>
 
               <label>
                 <span class="label-text">Advance Received (INR)</span>
-                <input type="number" id="advanceAmount" min="0" step="0.01" placeholder="0.00" />
+                <input type="number" id="detailAdvanceAmount" min="0" step="0.01" />
               </label>
 
               <label class="due-field">
                 <span class="label-text">Due Amount (Auto)</span>
-                <input type="number" id="dueAmount" min="0" step="0.01" readonly />
+                <input type="number" id="detailDueAmount" min="0" step="0.01" readonly />
               </label>
 
               <label>
                 <span class="label-text">Work Status</span>
-                <select id="workStatus">
-                  <option value="pending" selected>Pending</option>
+                <select id="detailWorkStatus">
+                  <option value="pending">Pending</option>
                   <option value="in progress">In Progress</option>
                   <option value="completed">Completed</option>
                 </select>
@@ -297,246 +577,35 @@
             </div>
           </div>
 
-          <div class="full-width actions form-footer-bar">
-            <button class="btn btn-ghost" type="button" id="resetBtn">Reset Form</button>
-            <button class="btn btn-primary" type="submit">Save Customer</button>
+          <div class="full-width actions detail-danger-row">
+            <button type="button" id="detailDeleteBtn" class="btn btn-danger hidden">Delete Event</button>
           </div>
         </form>
       </section>
+    </section>
+  </main>
 
-      <section class="panel hidden" id="viewEventsView">
-        <div class="list-header">
-          <div class="list-title-group">
-            <button type="button" id="backToDashboardFromView" class="btn btn-ghost">
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-              Dashboard
-            </button>
-            <div>
-              <p class="section-kicker">Client Register</p>
-              <h2>All Events</h2>
-            </div>
-          </div>
-          <div class="search-wrap">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input type="search" id="searchInput" placeholder="Search by name, phone, location..." />
-          </div>
-        </div>
-
-        <div id="eventsListView" class="events-list-view">
-          <section class="events-list-pane">
-            <div id="emptyState" class="empty-state">No customer records yet.</div>
-            <div id="eventButtonsContainer" class="event-buttons"></div>
-          </section>
-        </div>
-
-        <section class="event-detail-pane hidden" id="eventDetailPane">
-          <div class="detail-nav-bar">
-            <button type="button" id="backToEventsListBtn" class="btn btn-ghost">
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-              Back to Events
-            </button>
-          </div>
-
-          <form id="eventDetailForm" class="form-grid form-sections-layout hidden">
-            <div class="full-width detail-toolbar">
-              <div class="detail-title-wrap">
-                <span class="record-meta mode-pill" id="detailViewHint">View mode</span>
-                <h3 id="detailEventTitle" class="detail-event-title">Event Details</h3>
-              </div>
-              <div class="detail-toolbar-actions">
-                <button type="button" id="detailEditBtn" class="btn btn-soft">Edit Details</button>
-                <button type="button" id="detailCancelBtn" class="btn btn-ghost hidden">Cancel</button>
-                <button type="submit" id="detailSaveBtn" class="btn btn-primary hidden">Save Changes</button>
-              </div>
-            </div>
-
-            <div class="form-section full-width">
-              <div class="form-section-head">
-                <h4>Client &amp; Venue</h4>
-              </div>
-              <div class="form-section-grid">
-                <label>
-                  <span class="label-text">Customer Name</span>
-                  <input type="text" id="detailCustomerName" required />
-                </label>
-
-                <label>
-                  <span class="label-text">Booking Status</span>
-                  <select id="detailBookingStatus" required>
-                    <option value="pending">Pending</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span class="label-text">Phone Number</span>
-                  <input type="tel" id="detailPhoneNumber" required />
-                </label>
-
-                <label class="full-width">
-                  <span class="label-text">Event Location / Venue</span>
-                  <input type="text" id="detailEventLocation" required />
-                </label>
-              </div>
-            </div>
-
-            <div class="form-section full-width">
-              <div class="form-section-head">
-                <h4>Event Schedule</h4>
-              </div>
-              <div class="form-section-grid form-section-grid-three">
-                <label>
-                  <span class="label-text">Wedding Date</span>
-                  <input type="date" id="detailWeddingDate" />
-                </label>
-
-                <label>
-                  <span class="label-text">Pre-wedding Date</span>
-                  <input type="date" id="detailPreWeddingDate" />
-                </label>
-
-                <label>
-                  <span class="label-text">Reception Date</span>
-                  <input type="date" id="detailReceptionDate" />
-                </label>
-
-                <div class="full-width nested-panel">
-                  <div class="nested-header">
-                    <h4>Extra Function Dates</h4>
-                    <button type="button" id="detailAddFunctionBtn" class="btn btn-soft">+ Add Function</button>
-                  </div>
-                  <div id="detailFunctionsContainer" class="function-list"></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-section full-width">
-              <div class="form-section-head">
-                <h4>Coverage &amp; Crew</h4>
-              </div>
-              <div class="form-section-grid">
-                <label>
-                  <span class="label-text">Coverage Type</span>
-                  <select id="detailSideMode">
-                    <option value="combined">Combined</option>
-                    <option value="single">Single Side</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span class="label-text">Team Lead Name</span>
-                  <input type="text" id="detailTeamLeadName" />
-                </label>
-
-                <div class="full-width grid-two" id="detailCombinedTeamFields">
-                  <label>
-                    <span class="label-text">Bride Side Photographer</span>
-                    <input type="text" id="detailBrideSidePhotographer" />
-                  </label>
-
-                  <label>
-                    <span class="label-text">Bride Side Videographer</span>
-                    <input type="text" id="detailBrideSideVideographer" />
-                  </label>
-
-                  <label>
-                    <span class="label-text">Groom Side Photographer</span>
-                    <input type="text" id="detailGroomSidePhotographer" />
-                  </label>
-
-                  <label>
-                    <span class="label-text">Groom Side Videographer</span>
-                    <input type="text" id="detailGroomSideVideographer" />
-                  </label>
-                </div>
-
-                <div class="full-width grid-two hidden" id="detailSingleTeamFields">
-                  <label>
-                    <span class="label-text">Photographer</span>
-                    <input type="text" id="detailSingleSidePhotographer" />
-                  </label>
-
-                  <label>
-                    <span class="label-text">Videographer</span>
-                    <input type="text" id="detailSingleSideVideographer" />
-                  </label>
-                </div>
-
-                <label class="full-width">
-                  <span class="label-text">Other Crew Members</span>
-                  <textarea id="detailOtherCrewMembers" rows="2"></textarea>
-                </label>
-              </div>
-            </div>
-
-            <div class="form-section full-width">
-              <div class="form-section-head">
-                <h4>Requirements &amp; Notes</h4>
-              </div>
-              <div class="form-section-grid">
-                <label class="full-width">
-                  <span class="label-text">Other Requirements</span>
-                  <textarea id="detailAdditionalRequirements" rows="3"></textarea>
-                </label>
-              </div>
-            </div>
-
-            <div class="form-section full-width">
-              <div class="form-section-head">
-                <h4>Payment &amp; Delivery Status</h4>
-              </div>
-              <div class="form-section-grid">
-                <label>
-                  <span class="label-text">Package Amount (INR)</span>
-                  <input type="number" id="detailPackageAmount" min="0" step="0.01" required />
-                </label>
-
-                <label>
-                  <span class="label-text">Advance Received (INR)</span>
-                  <input type="number" id="detailAdvanceAmount" min="0" step="0.01" />
-                </label>
-
-                <label class="due-field">
-                  <span class="label-text">Due Amount (Auto)</span>
-                  <input type="number" id="detailDueAmount" min="0" step="0.01" readonly />
-                </label>
-
-                <label>
-                  <span class="label-text">Work Status</span>
-                  <select id="detailWorkStatus">
-                    <option value="pending">Pending</option>
-                    <option value="in progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-
-            <div class="full-width actions detail-danger-row">
-              <button type="button" id="detailDeleteBtn" class="btn btn-danger hidden">Delete Event</button>
-            </div>
-          </form>
-        </section>
-      </section>
-    </main>
-
-    <template id="functionRowTemplate">
-      <div class="function-row">
+  <template id="functionRowTemplate">
+    <div class="function-row">
+      <label class="function-field">
+        <span class="function-field-label">Function Name</span>
         <input type="text" class="function-name" placeholder="Function name (Haldi, Sangeet...)" />
+      </label>
+      <label class="function-field">
+        <span class="function-field-label">Date</span>
         <input type="date" class="function-date" />
-        <button type="button" class="btn btn-danger function-remove">Remove</button>
-      </div>
-    </template>
+      </label>
+      <label class="function-field">
+        <span class="function-field-label">Location / Venue</span>
+        <input type="text" class="function-location" placeholder="Function location / venue" />
+      </label>
+      <button type="button" class="btn btn-danger function-remove">Remove</button>
+    </div>
+  </template>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./supabase-config.js"></script>
-    <script src="./app.js"></script>
-  </body>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
+  <script src="./app.js"></script>
+</body>
+
 </html>

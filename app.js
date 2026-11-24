@@ -26,10 +26,12 @@ const detailEventTitle = document.getElementById("detailEventTitle");
 const detailCustomerNameInput = document.getElementById("detailCustomerName");
 const detailBookingStatusInput = document.getElementById("detailBookingStatus");
 const detailPhoneNumberInput = document.getElementById("detailPhoneNumber");
-const detailEventLocationInput = document.getElementById("detailEventLocation");
 const detailWeddingDateInput = document.getElementById("detailWeddingDate");
+const detailWeddingLocationInput = document.getElementById("detailWeddingLocation");
 const detailPreWeddingDateInput = document.getElementById("detailPreWeddingDate");
+const detailPreWeddingLocationInput = document.getElementById("detailPreWeddingLocation");
 const detailReceptionDateInput = document.getElementById("detailReceptionDate");
+const detailReceptionLocationInput = document.getElementById("detailReceptionLocation");
 const detailBrideSidePhotographerInput = document.getElementById("detailBrideSidePhotographer");
 const detailBrideSideVideographerInput = document.getElementById("detailBrideSideVideographer");
 const detailGroomSidePhotographerInput = document.getElementById("detailGroomSidePhotographer");
@@ -140,38 +142,33 @@ function computeDueFor(packageInput, advanceInput, dueInput) {
   dueInput.value = due.toFixed(2);
 }
 
-function createFunctionRow(name = "", date = "") {
+function appendFunctionRow(container, name = "", date = "", location = "") {
   const fragment = functionRowTemplate.content.cloneNode(true);
   const row = fragment.querySelector(".function-row");
   const nameInput = fragment.querySelector(".function-name");
   const dateInput = fragment.querySelector(".function-date");
+  const locationInput = fragment.querySelector(".function-location");
   const removeBtn = fragment.querySelector(".function-remove");
 
   nameInput.value = name;
   dateInput.value = date;
+  if (locationInput) {
+    locationInput.value = location;
+  }
 
   removeBtn.addEventListener("click", () => {
     row.remove();
   });
 
-  functionsContainer.appendChild(fragment);
+  container.appendChild(fragment);
 }
 
-function createDetailFunctionRow(name = "", date = "") {
-  const fragment = functionRowTemplate.content.cloneNode(true);
-  const row = fragment.querySelector(".function-row");
-  const nameInput = fragment.querySelector(".function-name");
-  const dateInput = fragment.querySelector(".function-date");
-  const removeBtn = fragment.querySelector(".function-remove");
+function createFunctionRow(name = "", date = "", location = "") {
+  appendFunctionRow(functionsContainer, name, date, location);
+}
 
-  nameInput.value = name;
-  dateInput.value = date;
-
-  removeBtn.addEventListener("click", () => {
-    row.remove();
-  });
-
-  detailFunctionsContainer.appendChild(fragment);
+function createDetailFunctionRow(name = "", date = "", location = "") {
+  appendFunctionRow(detailFunctionsContainer, name, date, location);
   setDetailEditMode(isDetailEditMode);
 }
 
@@ -214,8 +211,11 @@ function mapRowToRecord(row) {
     phoneNumber: row.phone_number || "",
     eventLocation: row.event_location || "",
     weddingDate: row.wedding_date || "",
+    weddingLocation: row.wedding_location || "",
     preWeddingDate: row.pre_wedding_date || "",
+    preWeddingLocation: row.pre_wedding_location || "",
     receptionDate: row.reception_date || "",
+    receptionLocation: row.reception_location || "",
     extraFunctions: Array.isArray(row.extra_functions) ? row.extra_functions : [],
     brideSidePhotographer: row.bride_side_photographer || row.photo_team || "",
     brideSideVideographer: row.bride_side_videographer || row.video_team || "",
@@ -243,8 +243,11 @@ function mapRecordToRow(record) {
     phone_number: record.phoneNumber,
     event_location: record.eventLocation,
     wedding_date: record.weddingDate || null,
+    wedding_location: record.weddingLocation || null,
     pre_wedding_date: record.preWeddingDate || null,
+    pre_wedding_location: record.preWeddingLocation || null,
     reception_date: record.receptionDate || null,
+    reception_location: record.receptionLocation || null,
     extra_functions: record.extraFunctions,
     bride_side_photographer: record.brideSidePhotographer || null,
     bride_side_videographer: record.brideSideVideographer || null,
@@ -381,6 +384,18 @@ function getFunctionNameValue(fn) {
   return typeof nameValue === "string" ? nameValue.trim() : "Function";
 }
 
+function getFunctionLocationValue(fn) {
+  if (!fn || typeof fn !== "object") {
+    return "";
+  }
+
+  const locationValue = [fn.location, fn.venue, fn.eventLocation].find((value) =>
+    typeof value === "string" ? value.trim() : false,
+  );
+
+  return typeof locationValue === "string" ? locationValue.trim() : "";
+}
+
 function parseComparableDate(value) {
   if (!value) {
     return null;
@@ -469,6 +484,44 @@ function getEventDatesLabel(record) {
   return entries.map((entry) => `${entry.label} - ${formatDate(entry.rawDate)}`).join(" | ");
 }
 
+function getUniqueFunctionLocations(record) {
+  const extraFunctions = Array.isArray(record.extraFunctions) ? record.extraFunctions : [];
+  const candidates = [
+    record.weddingLocation,
+    record.preWeddingLocation,
+    record.receptionLocation,
+    ...extraFunctions.map(getFunctionLocationValue),
+  ]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+
+  const seen = new Set();
+  const unique = [];
+  candidates.forEach((loc) => {
+    const key = loc.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(loc);
+    }
+  });
+
+  return unique;
+}
+
+function deriveEventLocation(record, fallback = "") {
+  const unique = getUniqueFunctionLocations(record);
+  return unique.length ? unique.join(" • ") : String(fallback || "").trim();
+}
+
+function getEventLocationsLabel(record) {
+  const unique = getUniqueFunctionLocations(record);
+  if (unique.length) {
+    return unique.join(" • ");
+  }
+
+  return record.eventLocation ? String(record.eventLocation).trim() : "-";
+}
+
 function normalizeStatus(value) {
   return String(value || "pending").trim().toLowerCase();
 }
@@ -512,7 +565,20 @@ function getFilteredRecords(searchText = "") {
   const filtered = !needle
     ? records
     : records.filter((record) => {
-        const haystack = [record.customerName, record.phoneNumber, record.eventLocation].join(" ").toLowerCase();
+        const extraLocations = Array.isArray(record.extraFunctions)
+          ? record.extraFunctions.map((fn) => `${getFunctionNameValue(fn)} ${getFunctionLocationValue(fn)}`).join(" ")
+          : "";
+        const haystack = [
+          record.customerName,
+          record.phoneNumber,
+          record.eventLocation,
+          record.weddingLocation,
+          record.preWeddingLocation,
+          record.receptionLocation,
+          extraLocations,
+        ]
+          .join(" ")
+          .toLowerCase();
         return haystack.includes(needle);
       });
 
@@ -548,7 +614,7 @@ function renderEventButtons(searchText = "") {
 
     const location = document.createElement("p");
     location.className = "event-button-location";
-    location.textContent = record.eventLocation || "-";
+    location.textContent = getEventLocationsLabel(record);
 
     const statusWrap = document.createElement("div");
     statusWrap.className = "event-status-row";
@@ -613,10 +679,12 @@ function renderSelectedRecord() {
   detailCustomerNameInput.value = record.customerName || "";
   detailBookingStatusInput.value = record.bookingStatus || "pending";
   detailPhoneNumberInput.value = record.phoneNumber || "";
-  detailEventLocationInput.value = record.eventLocation || "";
   detailWeddingDateInput.value = record.weddingDate || "";
+  detailWeddingLocationInput.value = record.weddingLocation || "";
   detailPreWeddingDateInput.value = record.preWeddingDate || "";
+  detailPreWeddingLocationInput.value = record.preWeddingLocation || "";
   detailReceptionDateInput.value = record.receptionDate || "";
+  detailReceptionLocationInput.value = record.receptionLocation || "";
   detailBrideSidePhotographerInput.value = record.brideSidePhotographer || "";
   detailBrideSideVideographerInput.value = record.brideSideVideographer || "";
   detailGroomSidePhotographerInput.value = record.groomSidePhotographer || "";
@@ -636,7 +704,9 @@ function renderSelectedRecord() {
   detailFunctionsContainer.innerHTML = "";
   const extraFunctions = Array.isArray(record.extraFunctions) ? record.extraFunctions : [];
   if (extraFunctions.length) {
-    extraFunctions.forEach((fn) => createDetailFunctionRow(fn.name || "", fn.date || ""));
+    extraFunctions.forEach((fn) =>
+      createDetailFunctionRow(getFunctionNameValue(fn), getFunctionDateValue(fn), getFunctionLocationValue(fn)),
+    );
   }
 
   showEventDetailMode();
@@ -710,10 +780,12 @@ function updateDetailFieldVisibility(editMode) {
     detailCustomerNameInput,
     detailBookingStatusInput,
     detailPhoneNumberInput,
-    detailEventLocationInput,
     detailWeddingDateInput,
+    detailWeddingLocationInput,
     detailPreWeddingDateInput,
+    detailPreWeddingLocationInput,
     detailReceptionDateInput,
+    detailReceptionLocationInput,
     detailSideModeInput,
     detailTeamLeadNameInput,
     detailOtherCrewMembersInput,
@@ -759,20 +831,24 @@ function collectFunctionsFrom(container) {
     .map((row) => ({
       name: row.querySelector(".function-name").value.trim(),
       date: row.querySelector(".function-date").value,
+      location: row.querySelector(".function-location")?.value.trim() || "",
     }))
-    .filter((fn) => fn.name || fn.date);
+    .filter((fn) => fn.name || fn.date || fn.location);
 }
 
 function buildRecordFromAddForm() {
-  return {
+  const extraFunctions = collectFunctionsFrom(functionsContainer);
+  const draft = {
     customerName: document.getElementById("customerName").value.trim(),
     bookingStatus: document.getElementById("bookingStatus").value,
     phoneNumber: document.getElementById("phoneNumber").value.trim(),
-    eventLocation: document.getElementById("eventLocation").value.trim(),
     weddingDate: document.getElementById("weddingDate").value,
+    weddingLocation: document.getElementById("weddingLocation").value.trim(),
     preWeddingDate: document.getElementById("preWeddingDate").value,
+    preWeddingLocation: document.getElementById("preWeddingLocation").value.trim(),
     receptionDate: document.getElementById("receptionDate").value,
-    extraFunctions: collectFunctionsFrom(functionsContainer),
+    receptionLocation: document.getElementById("receptionLocation").value.trim(),
+    extraFunctions,
     brideSidePhotographer: document.getElementById("brideSidePhotographer").value.trim(),
     brideSideVideographer: document.getElementById("brideSideVideographer").value.trim(),
     groomSidePhotographer: document.getElementById("groomSidePhotographer").value.trim(),
@@ -788,19 +864,27 @@ function buildRecordFromAddForm() {
     advanceAmount: parseMoney(advanceAmountInput.value),
     dueAmount: parseMoney(dueAmountInput.value),
   };
+
+  return {
+    ...draft,
+    eventLocation: deriveEventLocation(draft),
+  };
 }
 
 function buildRecordFromDetailForm(existingRecord) {
-  return {
+  const extraFunctions = collectFunctionsFrom(detailFunctionsContainer);
+  const draft = {
     ...existingRecord,
     customerName: detailCustomerNameInput.value.trim(),
     bookingStatus: detailBookingStatusInput.value,
     phoneNumber: detailPhoneNumberInput.value.trim(),
-    eventLocation: detailEventLocationInput.value.trim(),
     weddingDate: detailWeddingDateInput.value,
+    weddingLocation: detailWeddingLocationInput.value.trim(),
     preWeddingDate: detailPreWeddingDateInput.value,
+    preWeddingLocation: detailPreWeddingLocationInput.value.trim(),
     receptionDate: detailReceptionDateInput.value,
-    extraFunctions: collectFunctionsFrom(detailFunctionsContainer),
+    receptionLocation: detailReceptionLocationInput.value.trim(),
+    extraFunctions,
     brideSidePhotographer: detailBrideSidePhotographerInput.value.trim(),
     brideSideVideographer: detailBrideSideVideographerInput.value.trim(),
     groomSidePhotographer: detailGroomSidePhotographerInput.value.trim(),
@@ -815,6 +899,11 @@ function buildRecordFromDetailForm(existingRecord) {
     packageAmount: parseMoney(detailPackageAmountInput.value),
     advanceAmount: parseMoney(detailAdvanceAmountInput.value),
     dueAmount: parseMoney(detailDueAmountInput.value),
+  };
+
+  return {
+    ...draft,
+    eventLocation: deriveEventLocation(draft, existingRecord.eventLocation),
   };
 }
 

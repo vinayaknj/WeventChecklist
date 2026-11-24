@@ -5,10 +5,13 @@ create table if not exists public.events (
   customer_name text not null,
   booking_status text not null default 'pending',
   phone_number text not null,
-  event_location text not null,
+  event_location text,
   wedding_date date,
+  wedding_location text,
   pre_wedding_date date,
+  pre_wedding_location text,
   reception_date date,
+  reception_location text,
   extra_functions jsonb not null default '[]'::jsonb,
   bride_side_photographer text,
   bride_side_videographer text,
@@ -29,7 +32,11 @@ create table if not exists public.events (
 );
 
 alter table public.events add column if not exists booking_status text not null default 'pending';
+alter table public.events alter column event_location drop not null;
+alter table public.events add column if not exists wedding_location text;
 alter table public.events add column if not exists pre_wedding_date date;
+alter table public.events add column if not exists pre_wedding_location text;
+alter table public.events add column if not exists reception_location text;
 alter table public.events add column if not exists bride_side_photographer text;
 alter table public.events add column if not exists bride_side_videographer text;
 alter table public.events add column if not exists groom_side_photographer text;
