@@ -24,11 +24,18 @@ const detailFunctionsContainer = document.getElementById("detailFunctionsContain
 const detailFunctionsPanel = detailFunctionsContainer.closest(".nested-panel");
 const detailAddFunctionBtn = document.getElementById("detailAddFunctionBtn");
 const detailDeleteBtn = document.getElementById("detailDeleteBtn");
+const detailReceiptBtn = document.getElementById("detailReceiptBtn");
 const detailEditBtn = document.getElementById("detailEditBtn");
 const detailSaveBtn = document.getElementById("detailSaveBtn");
 const detailCancelBtn = document.getElementById("detailCancelBtn");
 const detailViewHint = document.getElementById("detailViewHint");
 const detailEventTitle = document.getElementById("detailEventTitle");
+
+const receiptModal = document.getElementById("receiptModal");
+const receiptSheet = document.getElementById("receiptSheet");
+const closeReceiptBtn = document.getElementById("closeReceiptBtn");
+const printReceiptBtn = document.getElementById("printReceiptBtn");
+const shareReceiptBtn = document.getElementById("shareReceiptBtn");
 
 const detailCustomerNameInput = document.getElementById("detailCustomerName");
 const detailBookingStatusInput = document.getElementById("detailBookingStatus");
@@ -115,6 +122,7 @@ let selectedMonthKey = null;
 let selectedRecordId = null;
 let isDetailEditMode = false;
 let currentDetailRecord = null;
+let currentReceiptRecord = null;
 
 function showView(view) {
   pinLockView.classList.add("hidden");
@@ -142,8 +150,13 @@ function showView(view) {
 
 function applyNavigationState(state = { view: "dashboard" }) {
   if (usingSheets && !activeStudioPin) {
+    hideReceiptModalDom();
     showView("pin");
     return;
+  }
+
+  if (!state?.modal) {
+    hideReceiptModalDom();
   }
 
   const targetView = state?.view || "dashboard";
@@ -160,6 +173,10 @@ function applyNavigationState(state = { view: "dashboard" }) {
     renderEventButtons(searchInput.value);
     renderSelectedRecord();
     showView("view");
+    if (state.modal === "receipt" && currentDetailRecord) {
+      renderReceiptModal(currentDetailRecord);
+      showReceiptModalDom();
+    }
     return;
   }
 
@@ -1162,6 +1179,7 @@ function setDetailEditMode(enabled) {
     button.disabled = !enabled;
   });
 
+  detailReceiptBtn.classList.toggle("hidden", enabled);
   detailEditBtn.classList.toggle("hidden", enabled);
   detailSaveBtn.classList.toggle("hidden", !enabled);
   detailCancelBtn.classList.toggle("hidden", !enabled);
@@ -1513,6 +1531,268 @@ eventDetailForm.addEventListener("submit", async (event) => {
       return;
     }
     notifyError("Unable to update event. Please try again.", error);
+  }
+});
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function buildReceiptNumber(record) {
+  const datePart = (getMainEventDateValue(record) || new Date().toISOString().slice(0, 10))
+    .replace(/-/g, "")
+    .slice(0, 6);
+  const idPart = String(record?.id || "0000")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(-4)
+    .toUpperCase()
+    .padStart(4, "0");
+  return `VPW-${datePart || "2026"}-${idPart}`;
+}
+
+function showReceiptModalDom() {
+  receiptModal.classList.remove("hidden");
+  document.body.classList.add("modal-open");
+}
+
+function hideReceiptModalDom() {
+  receiptModal.classList.add("hidden");
+  document.body.classList.remove("modal-open");
+}
+
+function renderReceiptModal(record) {
+  currentReceiptRecord = record;
+  const packageAmt = parseMoney(record.packageAmount);
+  const advanceAmt = parseMoney(record.advanceAmount);
+  const dueAmt = Math.max(packageAmt - advanceAmt, 0);
+  const receiptNo = buildReceiptNumber(record);
+  const issueDate = new Date().toLocaleDateString();
+  const isAdvancePaid = advanceAmt > 0;
+  const isPaidFull = packageAmt > 0 && dueAmt === 0;
+  const badgeLabel = isPaidFull
+    ? "Payment Receipt — Paid in Full"
+    : isAdvancePaid
+      ? "Advance Payment Receipt"
+      : "Booking Invoice";
+
+  const mainEventLabel = record.eventType ? record.eventType.trim() : "Main Event";
+  const mainDateLabel = formatDate(record.eventDate);
+  const mainLocLabel = record.eventLocation ? record.eventLocation.trim() : "-";
+  const extraFunctions = Array.isArray(record.extraFunctions) ? record.extraFunctions : [];
+
+  const functionRows = [];
+  if (record.eventType || record.eventDate || record.eventLocation) {
+    functionRows.push({
+      name: mainEventLabel,
+      date: mainDateLabel,
+      location: mainLocLabel,
+    });
+  }
+  extraFunctions.forEach((fn) => {
+    const name = getFunctionNameValue(fn);
+    const rawDate = getFunctionDateValue(fn);
+    const loc = getFunctionLocationValue(fn) || "-";
+    if (name || rawDate || loc !== "-") {
+      functionRows.push({
+        name: name || "Function",
+        date: rawDate ? formatDate(rawDate) : "-",
+        location: loc,
+      });
+    }
+  });
+
+  const functionsTableHtml = functionRows.length
+    ? `
+      <div class="receipt-table-wrap">
+        <table class="receipt-table">
+          <thead>
+            <tr>
+              <th>Event / Function</th>
+              <th>Date</th>
+              <th>Location / Venue</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${functionRows
+              .map(
+                (row) => `
+              <tr>
+                <td>${escapeHtml(row.name)}</td>
+                <td>${escapeHtml(row.date)}</td>
+                <td>${escapeHtml(row.location)}</td>
+              </tr>`,
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>`
+    : `<p class="receipt-box-line">No scheduled functions listed.</p>`;
+
+  const notesHtml = record.additionalRequirements
+    ? `<div class="receipt-notes"><strong>Package &amp; Deliverables Note:</strong> ${escapeHtml(record.additionalRequirements)}</div>`
+    : "";
+
+  const dueRowClass = isPaidFull ? "paid-full" : "due";
+  const dueRowLabel = isPaidFull ? "Balance Due (Paid in Full)" : "Balance Due";
+
+  receiptSheet.innerHTML = `
+    <div class="receipt-head">
+      <div>
+        <p class="eyebrow">Official Studio Receipt</p>
+        <h2 id="receiptHeading" class="receipt-studio-name">Vivah Premium Wedding</h2>
+        <p class="receipt-studio-sub">Photography &amp; Cinematography</p>
+      </div>
+      <div class="receipt-meta-box">
+        <span class="receipt-type-badge">${escapeHtml(badgeLabel)}</span>
+        <p class="receipt-meta-line">Receipt No: <strong>${escapeHtml(receiptNo)}</strong></p>
+        <p class="receipt-meta-line">Issued On: <strong>${escapeHtml(issueDate)}</strong></p>
+      </div>
+    </div>
+
+    <div class="receipt-info-grid">
+      <div class="receipt-box">
+        <p class="receipt-box-label">Billed To</p>
+        <p class="receipt-box-primary">${escapeHtml(record.customerName || "Client")}</p>
+        <p class="receipt-box-line">Phone: ${escapeHtml(record.phoneNumber || "-")}</p>
+        <p class="receipt-box-line">Booking Status: ${escapeHtml((record.bookingStatus || "pending").toUpperCase())}</p>
+      </div>
+      <div class="receipt-box">
+        <p class="receipt-box-label">Coverage Summary</p>
+        <p class="receipt-box-primary">${escapeHtml(mainEventLabel)}</p>
+        <p class="receipt-box-line">Primary Date: ${escapeHtml(mainDateLabel)}</p>
+        <p class="receipt-box-line">Primary Venue: ${escapeHtml(mainLocLabel)}</p>
+      </div>
+    </div>
+
+    ${functionsTableHtml}
+
+    <div class="receipt-totals">
+      <div class="receipt-total-row">
+        <span>Total Package Amount</span>
+        <strong>${escapeHtml(formatMoney(packageAmt))}</strong>
+      </div>
+      <div class="receipt-total-row advance">
+        <span>Advance Received</span>
+        <strong>${escapeHtml(formatMoney(advanceAmt))}</strong>
+      </div>
+      <div class="receipt-total-row ${dueRowClass}">
+        <span>${escapeHtml(dueRowLabel)}</span>
+        <strong>${escapeHtml(formatMoney(dueAmt))}</strong>
+      </div>
+    </div>
+
+    ${notesHtml}
+
+    <div class="receipt-footer">
+      <span>Thank you for choosing Vivah Premium Wedding.</span>
+      <span>Authorized Studio Receipt</span>
+    </div>
+  `;
+}
+
+function openReceiptModal(record) {
+  if (!record) {
+    return;
+  }
+
+  renderReceiptModal(record);
+  showReceiptModalDom();
+  if (window.history && typeof window.history.pushState === "function") {
+    const baseState = window.history.state || {
+      view: "detail",
+      monthKey: selectedMonthKey,
+      recordId: record.id,
+    };
+    window.history.pushState({ ...baseState, modal: "receipt" }, "");
+  }
+}
+
+function closeReceiptModal() {
+  if (window.history.state && window.history.state.modal === "receipt") {
+    window.history.back();
+    return;
+  }
+
+  hideReceiptModalDom();
+}
+
+function buildReceiptShareText(record) {
+  const packageAmt = parseMoney(record.packageAmount);
+  const advanceAmt = parseMoney(record.advanceAmount);
+  const dueAmt = Math.max(packageAmt - advanceAmt, 0);
+  const receiptNo = buildReceiptNumber(record);
+
+  const lines = [
+    "*Vivah Premium Wedding — Payment Receipt*",
+    `Receipt No: ${receiptNo}`,
+    `Date: ${new Date().toLocaleDateString()}`,
+    `Client: ${record.customerName || "-"} (${record.phoneNumber || "-"})`,
+    `Event: ${record.eventType || "Event"} | ${formatDate(record.eventDate)} | ${record.eventLocation || "-"}`,
+    `Total Package: ${formatMoney(packageAmt)}`,
+    `Advance Received: ${formatMoney(advanceAmt)}`,
+    `Balance Due: ${formatMoney(dueAmt)}`,
+    "",
+    "Thank you for booking with Vivah Premium Wedding!",
+  ];
+
+  return lines.join("\n");
+}
+
+async function shareOrCopyReceipt() {
+  if (!currentReceiptRecord) {
+    return;
+  }
+
+  const text = buildReceiptShareText(currentReceiptRecord);
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `Receipt ${buildReceiptNumber(currentReceiptRecord)} - Vivah Premium Wedding`,
+        text,
+      });
+      return;
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        return;
+      }
+    }
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    const originalText = shareReceiptBtn.textContent;
+    shareReceiptBtn.textContent = "Copied!";
+    setTimeout(() => {
+      shareReceiptBtn.textContent = originalText;
+    }, 1800);
+  } catch {
+    window.alert(text);
+  }
+}
+
+detailReceiptBtn.addEventListener("click", () => {
+  if (!currentDetailRecord) {
+    return;
+  }
+  openReceiptModal(currentDetailRecord);
+});
+
+closeReceiptBtn.addEventListener("click", closeReceiptModal);
+printReceiptBtn.addEventListener("click", () => window.print());
+shareReceiptBtn.addEventListener("click", shareOrCopyReceipt);
+receiptModal.addEventListener("click", (event) => {
+  if (event.target === receiptModal) {
+    closeReceiptModal();
+  }
+});
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !receiptModal.classList.contains("hidden")) {
+    closeReceiptModal();
   }
 });
 
