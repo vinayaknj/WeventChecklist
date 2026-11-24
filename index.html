@@ -17,22 +17,60 @@
   <div class="ambient-bg" aria-hidden="true"></div>
   <main class="app-shell">
     <header class="hero">
-      <div class="hero-brand">
-        <div class="hero-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-            stroke-linejoin="round">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-            <circle cx="12" cy="13" r="4" />
+      <div class="hero-top">
+        <div class="hero-brand">
+          <div class="hero-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+          </div>
+          <div>
+            <p class="eyebrow">Client Booking Register</p>
+            <h1>Vivah Premium Wedding</h1>
+          </div>
+        </div>
+        <button type="button" id="lockRegisterBtn" class="btn btn-ghost hidden">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
-        </div>
-        <div>
-          <p class="eyebrow">Client Booking Register</p>
-          <h1>Vivah Premium Wedding</h1>
-        </div>
+          Lock
+        </button>
       </div>
       <p class="subtitle">Centralized management for client bookings, event schedules, crew assignments, and payment
         tracking.</p>
     </header>
+
+    <section class="panel hidden" id="pinLockView">
+      <div class="pin-card">
+        <div class="pin-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+        </div>
+        <p class="section-kicker">Studio Access</p>
+        <h2>Enter Studio PIN</h2>
+        <p class="subtitle">Enter your private studio PIN to unlock bookings stored in Google Sheets.</p>
+        <form id="pinUnlockForm" class="pin-form">
+          <label>
+            <span class="label-text">Studio PIN</span>
+            <input type="password" id="studioPinInput" inputmode="numeric" autocomplete="current-password"
+              placeholder="Enter studio PIN" required />
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="rememberPinCheckbox" />
+            <span>Keep unlocked on this device</span>
+          </label>
+          <p id="pinErrorMsg" class="pin-error hidden" role="alert"></p>
+          <button type="submit" id="unlockPinBtn" class="btn btn-primary">Unlock Register</button>
+        </form>
+      </div>
+    </section>
 
     <section class="panel" id="dashboardView">
       <div class="panel-header">
@@ -164,45 +202,24 @@
 
         <div class="form-section full-width">
           <div class="form-section-head">
-            <h3>Event Schedule &amp; Venues</h3>
-            <p>Ceremony dates, individual venues, and any additional functions.</p>
+            <h3>Event / Function Details</h3>
+            <p>Main event type, date, and location, plus any extra functions.</p>
           </div>
-          <div class="form-section-grid">
-            <div class="full-width schedule-pair">
-              <label>
-                <span class="label-text">Wedding Date</span>
-                <input type="date" id="weddingDate" />
-              </label>
+          <div class="form-section-grid form-section-grid-three">
+            <label>
+              <span class="label-text">Event / Function Type</span>
+              <input type="text" id="eventType" list="eventTypeOptions" placeholder="e.g. Wedding, Pre-wedding, Reception" />
+            </label>
 
-              <label>
-                <span class="label-text">Wedding Location</span>
-                <input type="text" id="weddingLocation" placeholder="Venue for wedding" />
-              </label>
-            </div>
+            <label>
+              <span class="label-text">Date</span>
+              <input type="date" id="eventDate" />
+            </label>
 
-            <div class="full-width schedule-pair">
-              <label>
-                <span class="label-text">Pre-wedding Date</span>
-                <input type="date" id="preWeddingDate" />
-              </label>
-
-              <label>
-                <span class="label-text">Pre-wedding Location</span>
-                <input type="text" id="preWeddingLocation" placeholder="Venue for pre-wedding" />
-              </label>
-            </div>
-
-            <div class="full-width schedule-pair">
-              <label>
-                <span class="label-text">Reception Date</span>
-                <input type="date" id="receptionDate" />
-              </label>
-
-              <label>
-                <span class="label-text">Reception Location</span>
-                <input type="text" id="receptionLocation" placeholder="Venue for reception" />
-              </label>
-            </div>
+            <label>
+              <span class="label-text">Location</span>
+              <input type="text" id="eventLocation" placeholder="Venue or city" />
+            </label>
 
             <div class="full-width nested-panel">
               <div class="nested-header">
@@ -352,13 +369,16 @@
             <h2>All Events</h2>
           </div>
         </div>
-        <div class="search-wrap">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input type="search" id="searchInput" placeholder="Search by name, phone, location..." />
+        <div class="list-actions">
+          <div class="search-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input type="search" id="searchInput" placeholder="Search by name, phone, location..." />
+          </div>
+          <button type="button" id="exportCsvBtn" class="btn btn-soft">Export CSV</button>
         </div>
       </div>
 
@@ -420,44 +440,23 @@
 
           <div class="form-section full-width">
             <div class="form-section-head">
-              <h4>Event Schedule &amp; Venues</h4>
+              <h4>Event / Function Details</h4>
             </div>
-            <div class="form-section-grid">
-              <div class="full-width schedule-pair">
-                <label>
-                  <span class="label-text">Wedding Date</span>
-                  <input type="date" id="detailWeddingDate" />
-                </label>
+            <div class="form-section-grid form-section-grid-three">
+              <label>
+                <span class="label-text">Event / Function Type</span>
+                <input type="text" id="detailEventType" list="eventTypeOptions" />
+              </label>
 
-                <label>
-                  <span class="label-text">Wedding Location</span>
-                  <input type="text" id="detailWeddingLocation" />
-                </label>
-              </div>
+              <label>
+                <span class="label-text">Date</span>
+                <input type="date" id="detailEventDate" />
+              </label>
 
-              <div class="full-width schedule-pair">
-                <label>
-                  <span class="label-text">Pre-wedding Date</span>
-                  <input type="date" id="detailPreWeddingDate" />
-                </label>
-
-                <label>
-                  <span class="label-text">Pre-wedding Location</span>
-                  <input type="text" id="detailPreWeddingLocation" />
-                </label>
-              </div>
-
-              <div class="full-width schedule-pair">
-                <label>
-                  <span class="label-text">Reception Date</span>
-                  <input type="date" id="detailReceptionDate" />
-                </label>
-
-                <label>
-                  <span class="label-text">Reception Location</span>
-                  <input type="text" id="detailReceptionLocation" />
-                </label>
-              </div>
+              <label>
+                <span class="label-text">Location</span>
+                <input type="text" id="detailEventLocation" />
+              </label>
 
               <div class="full-width nested-panel">
                 <div class="nested-header">
@@ -585,6 +584,18 @@
     </section>
   </main>
 
+  <datalist id="eventTypeOptions">
+    <option value="Wedding"></option>
+    <option value="Pre-wedding"></option>
+    <option value="Reception"></option>
+    <option value="Engagement"></option>
+    <option value="Haldi"></option>
+    <option value="Sangeet"></option>
+    <option value="Mehendi"></option>
+    <option value="Anniversary"></option>
+    <option value="Corporate Event"></option>
+  </datalist>
+
   <template id="functionRowTemplate">
     <div class="function-row">
       <label class="function-field">
@@ -604,6 +615,7 @@
   </template>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./sheets-config.js"></script>
   <script src="./supabase-config.js"></script>
   <script src="./app.js"></script>
 </body>

@@ -1,51 +1,50 @@
-# Wedding Studio Client Register (GitHub + Supabase)
+# Vivah Premium Wedding — Client Booking Register
 
 ## What this setup gives you
 
-1. Frontend hosted on GitHub Pages (low/no cost).
-2. Shared data storage in Supabase Postgres.
-3. CRUD from browser: add, view, edit, delete events.
+1. Frontend hosted on GitHub Pages (₹0 hosting cost).
+2. Persistent storage in **Google Sheets** (never pauses, with built-in Google Drive Version History).
+3. **Studio PIN protection** verified inside Google Apps Script (the PIN is never stored in GitHub).
+4. Full CRUD from desktop or mobile: add, search, view, edit, delete events, and export CSV backups.
 
-## 1. Create Supabase table
+---
 
-1. Open your Supabase project.
-2. Go to SQL Editor.
-3. Run [supabase-schema.sql](supabase-schema.sql).
+## 1. Set up Google Sheets + Studio PIN (2 minutes)
 
-## 2. Configure frontend keys
+1. Create a new Google Sheet in Google Drive (e.g. `Vivah Premium Wedding Bookings`).
+2. In the Google Sheet, open **Extensions → Apps Script**.
+3. Copy the entire contents of [google-apps-script.gs](google-apps-script.gs) and paste it into `Code.gs`.
+4. Change `const STUDIO_PIN = "1234";` at the top of `Code.gs` to your own secret Studio PIN, then click **Save**.
+5. Click **Deploy → New deployment**:
+   - Click the gear icon → select **Web app**
+   - **Execute as**: `Me`
+   - **Who has access**: `Anyone`
+   - Click **Deploy**, authorize the permissions prompt, and copy the **Web app URL** (it ends with `/exec`).
 
-1. Open Supabase Project Settings -> API.
-2. Copy:
-   - Project URL
-   - anon public key
-3. Edit [supabase-config.js](supabase-config.js):
+---
+
+## 2. Connect the frontend
+
+Edit [sheets-config.js](sheets-config.js) and paste your Web App URL:
 
 ```javascript
-window.SUPABASE_CONFIG = {
-  url: "https://YOUR_PROJECT_REF.supabase.co",
-  anonKey: "YOUR_SUPABASE_ANON_KEY",
+window.SHEETS_CONFIG = {
+  webAppUrl: "https://script.google.com/macros/s/YOUR_ACTUAL_DEPLOYMENT_ID/exec",
 };
 ```
 
-## 3. Run locally
+> **Note**: When `sheets-config.js` is configured, the app uses Google Sheets + Studio PIN. If neither Google Sheets nor Supabase is configured, it falls back to local browser storage.
 
-1. Open [index.html](index.html) in browser.
-2. Add/Edit/Delete events.
-3. Records are stored in Supabase.
+---
 
-If Supabase config is missing/invalid, the app falls back to local browser storage.
+## 3. Run locally or host on GitHub Pages
 
-## 4. Host on GitHub Pages
+1. Open [index.html](index.html) locally or push to GitHub (`main` branch, `/root` folder in **Settings → Pages**).
+2. Enter your Studio PIN on the unlock screen to view, add, edit, or delete events.
+3. Use **Export CSV** in **All Events** anytime to download an offline backup.
 
-1. Push these files to a GitHub repository.
-2. In GitHub repo Settings -> Pages:
-   - Source: Deploy from branch
-   - Branch: `main` (or your default), folder `/root`
-3. Wait for deploy and open your GitHub Pages URL.
+---
 
-## Important security note
+## Optional: Supabase mode
 
-1. `anonKey` is public and can be used in frontend apps.
-2. Keep Row Level Security enabled.
-3. Current policy in [supabase-schema.sql](supabase-schema.sql) allows anon CRUD for simplicity.
-4. For production, restrict policies (for example, add authentication and role-based access).
+If you use Supabase instead of Google Sheets, keep `sheets-config.js` with its placeholder URL, run [supabase-schema.sql](supabase-schema.sql) in the Supabase SQL Editor, and set credentials in [supabase-config.js](supabase-config.js).

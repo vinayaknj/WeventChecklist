@@ -1,4 +1,6 @@
 const STORAGE_KEY = "weddingStudioCustomers.v1";
+const PIN_SESSION_KEY = "vivahStudioPin.session.v1";
+const PIN_LOCAL_KEY = "vivahStudioPin.device.v1";
 
 const customerForm = document.getElementById("customerForm");
 const functionsContainer = document.getElementById("functionsContainer");
@@ -26,12 +28,9 @@ const detailEventTitle = document.getElementById("detailEventTitle");
 const detailCustomerNameInput = document.getElementById("detailCustomerName");
 const detailBookingStatusInput = document.getElementById("detailBookingStatus");
 const detailPhoneNumberInput = document.getElementById("detailPhoneNumber");
-const detailWeddingDateInput = document.getElementById("detailWeddingDate");
-const detailWeddingLocationInput = document.getElementById("detailWeddingLocation");
-const detailPreWeddingDateInput = document.getElementById("detailPreWeddingDate");
-const detailPreWeddingLocationInput = document.getElementById("detailPreWeddingLocation");
-const detailReceptionDateInput = document.getElementById("detailReceptionDate");
-const detailReceptionLocationInput = document.getElementById("detailReceptionLocation");
+const detailEventTypeInput = document.getElementById("detailEventType");
+const detailEventDateInput = document.getElementById("detailEventDate");
+const detailEventLocationInput = document.getElementById("detailEventLocation");
 const detailBrideSidePhotographerInput = document.getElementById("detailBrideSidePhotographer");
 const detailBrideSideVideographerInput = document.getElementById("detailBrideSideVideographer");
 const detailGroomSidePhotographerInput = document.getElementById("detailGroomSidePhotographer");
@@ -61,6 +60,14 @@ const advanceAmountInput = document.getElementById("advanceAmount");
 const dueAmountInput = document.getElementById("dueAmount");
 
 const dashboardView = document.getElementById("dashboardView");
+const pinLockView = document.getElementById("pinLockView");
+const pinUnlockForm = document.getElementById("pinUnlockForm");
+const studioPinInput = document.getElementById("studioPinInput");
+const rememberPinCheckbox = document.getElementById("rememberPinCheckbox");
+const pinErrorMsg = document.getElementById("pinErrorMsg");
+const unlockPinBtn = document.getElementById("unlockPinBtn");
+const lockRegisterBtn = document.getElementById("lockRegisterBtn");
+const exportCsvBtn = document.getElementById("exportCsvBtn");
 const addEventView = document.getElementById("addEventView");
 const viewEventsView = document.getElementById("viewEventsView");
 const openAddEventBtn = document.getElementById("openAddEvent");
@@ -71,6 +78,12 @@ const statTotalEvents = document.getElementById("statTotalEvents");
 const statUpcomingEvents = document.getElementById("statUpcomingEvents");
 const statDueEvents = document.getElementById("statDueEvents");
 
+const sheetsConfig = window.SHEETS_CONFIG || {};
+const hasValidSheetsConfig =
+  typeof sheetsConfig.webAppUrl === "string" &&
+  sheetsConfig.webAppUrl.trim() &&
+  !sheetsConfig.webAppUrl.includes("YOUR_DEPLOYMENT_ID");
+
 const supabaseConfig = window.SUPABASE_CONFIG || {};
 const hasValidSupabaseConfig =
   typeof supabaseConfig.url === "string" &&
@@ -80,23 +93,33 @@ const hasValidSupabaseConfig =
   !supabaseConfig.url.includes("YOUR_PROJECT_REF") &&
   !supabaseConfig.anonKey.includes("YOUR_SUPABASE_ANON_KEY");
 
-const supabaseClient = hasValidSupabaseConfig && window.supabase
+const usingSheets = Boolean(hasValidSheetsConfig);
+
+const supabaseClient = !usingSheets && hasValidSupabaseConfig && window.supabase
   ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey, {
       auth: { persistSession: false },
     })
   : null;
 
 const usingSupabase = Boolean(supabaseClient);
+const usingRemote = usingSheets || usingSupabase;
 
+let activeStudioPin = "";
 let records = [];
 let selectedRecordId = null;
 let isDetailEditMode = false;
 let currentDetailRecord = null;
 
 function showView(view) {
+  pinLockView.classList.add("hidden");
   dashboardView.classList.add("hidden");
   addEventView.classList.add("hidden");
   viewEventsView.classList.add("hidden");
+
+  if (view === "pin") {
+    pinLockView.classList.remove("hidden");
+    return;
+  }
 
   if (view === "add") {
     addEventView.classList.remove("hidden");
@@ -109,6 +132,64 @@ function showView(view) {
   }
 
   dashboardView.classList.remove("hidden");
+}
+
+function getStoredPin() {
+  try {
+    return sessionStorage.getItem(PIN_SESSION_KEY) || localStorage.getItem(PIN_LOCAL_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function setStoredPin(pin, rememberOnDevice) {
+  activeStudioPin = pin;
+  try {
+    sessionStorage.setItem(PIN_SESSION_KEY, pin);
+    if (rememberOnDevice) {
+      localStorage.setItem(PIN_LOCAL_KEY, pin);
+    } else {
+      localStorage.removeItem(PIN_LOCAL_KEY);
+    }
+  } catch {
+    // Ignore storage restrictions.
+  }
+}
+
+function clearStoredPin() {
+  activeStudioPin = "";
+  try {
+    sessionStorage.removeItem(PIN_SESSION_KEY);
+    localStorage.removeItem(PIN_LOCAL_KEY);
+  } catch {
+    // Ignore storage restrictions.
+  }
+}
+
+function setPinError(message = "") {
+  if (!message) {
+    pinErrorMsg.textContent = "";
+    pinErrorMsg.classList.add("hidden");
+    return;
+  }
+
+  pinErrorMsg.textContent = message;
+  pinErrorMsg.classList.remove("hidden");
+}
+
+function lockStudioView(errorMessage = "") {
+  clearStoredPin();
+  records = [];
+  selectedRecordId = null;
+  isDetailEditMode = false;
+  currentDetailRecord = null;
+  lockRegisterBtn.classList.add("hidden");
+  updateDashboardStats();
+  renderEventButtons();
+  renderSelectedRecord();
+  setPinError(errorMessage);
+  studioPinInput.value = "";
+  showView("pin");
 }
 
 function parseMoney(value) {
@@ -203,31 +284,36 @@ function saveRecordsToLocal(nextRecords) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(nextRecords));
 }
 
+function asText(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  return String(value);
+}
+
 function mapRowToRecord(row) {
   return {
     id: row.id,
-    customerName: row.customer_name || "",
-    bookingStatus: row.booking_status || "pending",
-    phoneNumber: row.phone_number || "",
-    eventLocation: row.event_location || "",
-    weddingDate: row.wedding_date || "",
-    weddingLocation: row.wedding_location || "",
-    preWeddingDate: row.pre_wedding_date || "",
-    preWeddingLocation: row.pre_wedding_location || "",
-    receptionDate: row.reception_date || "",
-    receptionLocation: row.reception_location || "",
+    customerName: asText(row.customer_name),
+    bookingStatus: asText(row.booking_status) || "pending",
+    phoneNumber: asText(row.phone_number),
+    eventType: asText(row.event_type),
+    eventDate: asText(row.event_date || row.wedding_date),
+    eventLocation: asText(row.event_location),
+    preWeddingDate: asText(row.pre_wedding_date),
+    receptionDate: asText(row.reception_date),
     extraFunctions: Array.isArray(row.extra_functions) ? row.extra_functions : [],
-    brideSidePhotographer: row.bride_side_photographer || row.photo_team || "",
-    brideSideVideographer: row.bride_side_videographer || row.video_team || "",
-    groomSidePhotographer: row.groom_side_photographer || "",
-    groomSideVideographer: row.groom_side_videographer || "",
-    sideMode: row.side_mode || "combined",
-    singleSidePhotographer: row.single_side_photographer || "",
-    singleSideVideographer: row.single_side_videographer || "",
-    teamLeadName: row.team_lead_name || "",
-    otherCrewMembers: row.other_crew_members || "",
-    workStatus: row.work_status || "pending",
-    additionalRequirements: row.additional_requirements || "",
+    brideSidePhotographer: asText(row.bride_side_photographer || row.photo_team),
+    brideSideVideographer: asText(row.bride_side_videographer || row.video_team),
+    groomSidePhotographer: asText(row.groom_side_photographer),
+    groomSideVideographer: asText(row.groom_side_videographer),
+    sideMode: asText(row.side_mode) || "combined",
+    singleSidePhotographer: asText(row.single_side_photographer),
+    singleSideVideographer: asText(row.single_side_videographer),
+    teamLeadName: asText(row.team_lead_name),
+    otherCrewMembers: asText(row.other_crew_members),
+    workStatus: asText(row.work_status) || "pending",
+    additionalRequirements: asText(row.additional_requirements),
     packageAmount: parseMoney(row.package_amount),
     advanceAmount: parseMoney(row.advance_amount),
     dueAmount: parseMoney(row.due_amount),
@@ -236,18 +322,13 @@ function mapRowToRecord(row) {
   };
 }
 
-function mapRecordToRow(record) {
-  return {
+function mapRecordToRow(record, target = "supabase") {
+  const row = {
     customer_name: record.customerName,
     booking_status: record.bookingStatus || "pending",
     phone_number: record.phoneNumber,
-    event_location: record.eventLocation,
-    wedding_date: record.weddingDate || null,
-    wedding_location: record.weddingLocation || null,
-    pre_wedding_date: record.preWeddingDate || null,
-    pre_wedding_location: record.preWeddingLocation || null,
-    reception_date: record.receptionDate || null,
-    reception_location: record.receptionLocation || null,
+    event_type: record.eventType || null,
+    event_location: record.eventLocation || "",
     extra_functions: record.extraFunctions,
     bride_side_photographer: record.brideSidePhotographer || null,
     bride_side_videographer: record.brideSideVideographer || null,
@@ -264,9 +345,53 @@ function mapRecordToRow(record) {
     advance_amount: parseMoney(record.advanceAmount),
     due_amount: parseMoney(record.dueAmount),
   };
+
+  if (target === "sheets") {
+    row.event_date = record.eventDate || "";
+  } else {
+    row.wedding_date = record.eventDate || null;
+    row.pre_wedding_date = record.preWeddingDate || null;
+    row.reception_date = record.receptionDate || null;
+  }
+
+  return row;
+}
+
+async function callSheetsApi(payload) {
+  const response = await fetch(sheetsConfig.webAppUrl.trim(), {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8",
+    },
+    body: JSON.stringify({
+      ...payload,
+      pin: activeStudioPin,
+    }),
+    redirect: "follow",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Google Sheets request failed (HTTP ${response.status}).`);
+  }
+
+  const result = await response.json();
+  if (!result || result.ok !== true) {
+    const error = new Error(result?.error || "Google Sheets request failed.");
+    if (/invalid studio pin/i.test(error.message)) {
+      error.isAuthError = true;
+    }
+    throw error;
+  }
+
+  return result;
 }
 
 async function fetchRecords() {
+  if (usingSheets) {
+    const result = await callSheetsApi({ action: "list" });
+    return (result.records || []).map(mapRowToRecord);
+  }
+
   if (!usingSupabase) {
     return loadRecordsFromLocal();
   }
@@ -284,6 +409,12 @@ async function fetchRecords() {
 }
 
 async function createRecord(record) {
+  if (usingSheets) {
+    const payload = mapRecordToRow(record, "sheets");
+    const result = await callSheetsApi({ action: "create", record: payload });
+    return mapRowToRecord(result.record);
+  }
+
   if (!usingSupabase) {
     const localRecord = {
       ...record,
@@ -296,7 +427,7 @@ async function createRecord(record) {
     return localRecord;
   }
 
-  const payload = mapRecordToRow(record);
+  const payload = mapRecordToRow(record, "supabase");
   const { data, error } = await supabaseClient.from("events").insert(payload).select("*").single();
   if (error) {
     throw error;
@@ -306,6 +437,12 @@ async function createRecord(record) {
 }
 
 async function updateRecord(id, updates) {
+  if (usingSheets) {
+    const payload = mapRecordToRow(updates, "sheets");
+    const result = await callSheetsApi({ action: "update", id, record: payload });
+    return result.record ? mapRowToRecord(result.record) : null;
+  }
+
   if (!usingSupabase) {
     const index = records.findIndex((record) => record.id === id);
     if (index < 0) {
@@ -321,7 +458,7 @@ async function updateRecord(id, updates) {
     return records[index];
   }
 
-  const payload = mapRecordToRow(updates);
+  const payload = mapRecordToRow(updates, "supabase");
   const { data, error } = await supabaseClient
     .from("events")
     .update(payload)
@@ -337,6 +474,11 @@ async function updateRecord(id, updates) {
 }
 
 async function deleteRecordById(id) {
+  if (usingSheets) {
+    await callSheetsApi({ action: "delete", id });
+    return;
+  }
+
   if (!usingSupabase) {
     records = records.filter((record) => record.id !== id);
     saveRecordsToLocal(records);
@@ -413,11 +555,11 @@ function parseComparableDate(value) {
 function getEventDateEntries(record) {
   const entries = [];
 
-  if (record.weddingDate) {
+  if (record.eventDate) {
     entries.push({
-      label: "Wedding",
-      rawDate: record.weddingDate,
-      dateObj: parseComparableDate(record.weddingDate),
+      label: record.eventType ? record.eventType.trim() : "Event",
+      rawDate: record.eventDate,
+      dateObj: parseComparableDate(record.eventDate),
     });
   }
 
@@ -486,12 +628,7 @@ function getEventDatesLabel(record) {
 
 function getUniqueFunctionLocations(record) {
   const extraFunctions = Array.isArray(record.extraFunctions) ? record.extraFunctions : [];
-  const candidates = [
-    record.weddingLocation,
-    record.preWeddingLocation,
-    record.receptionLocation,
-    ...extraFunctions.map(getFunctionLocationValue),
-  ]
+  const candidates = [record.eventLocation, ...extraFunctions.map(getFunctionLocationValue)]
     .map((value) => String(value || "").trim())
     .filter(Boolean);
 
@@ -508,18 +645,9 @@ function getUniqueFunctionLocations(record) {
   return unique;
 }
 
-function deriveEventLocation(record, fallback = "") {
-  const unique = getUniqueFunctionLocations(record);
-  return unique.length ? unique.join(" • ") : String(fallback || "").trim();
-}
-
 function getEventLocationsLabel(record) {
   const unique = getUniqueFunctionLocations(record);
-  if (unique.length) {
-    return unique.join(" • ");
-  }
-
-  return record.eventLocation ? String(record.eventLocation).trim() : "-";
+  return unique.length ? unique.join(" • ") : "-";
 }
 
 function normalizeStatus(value) {
@@ -571,10 +699,8 @@ function getFilteredRecords(searchText = "") {
         const haystack = [
           record.customerName,
           record.phoneNumber,
+          record.eventType,
           record.eventLocation,
-          record.weddingLocation,
-          record.preWeddingLocation,
-          record.receptionLocation,
           extraLocations,
         ]
           .join(" ")
@@ -679,12 +805,9 @@ function renderSelectedRecord() {
   detailCustomerNameInput.value = record.customerName || "";
   detailBookingStatusInput.value = record.bookingStatus || "pending";
   detailPhoneNumberInput.value = record.phoneNumber || "";
-  detailWeddingDateInput.value = record.weddingDate || "";
-  detailWeddingLocationInput.value = record.weddingLocation || "";
-  detailPreWeddingDateInput.value = record.preWeddingDate || "";
-  detailPreWeddingLocationInput.value = record.preWeddingLocation || "";
-  detailReceptionDateInput.value = record.receptionDate || "";
-  detailReceptionLocationInput.value = record.receptionLocation || "";
+  detailEventTypeInput.value = record.eventType || "";
+  detailEventDateInput.value = record.eventDate || "";
+  detailEventLocationInput.value = record.eventLocation || "";
   detailBrideSidePhotographerInput.value = record.brideSidePhotographer || "";
   detailBrideSideVideographerInput.value = record.brideSideVideographer || "";
   detailGroomSidePhotographerInput.value = record.groomSidePhotographer || "";
@@ -780,12 +903,9 @@ function updateDetailFieldVisibility(editMode) {
     detailCustomerNameInput,
     detailBookingStatusInput,
     detailPhoneNumberInput,
-    detailWeddingDateInput,
-    detailWeddingLocationInput,
-    detailPreWeddingDateInput,
-    detailPreWeddingLocationInput,
-    detailReceptionDateInput,
-    detailReceptionLocationInput,
+    detailEventTypeInput,
+    detailEventDateInput,
+    detailEventLocationInput,
     detailSideModeInput,
     detailTeamLeadNameInput,
     detailOtherCrewMembersInput,
@@ -837,18 +957,14 @@ function collectFunctionsFrom(container) {
 }
 
 function buildRecordFromAddForm() {
-  const extraFunctions = collectFunctionsFrom(functionsContainer);
-  const draft = {
+  return {
     customerName: document.getElementById("customerName").value.trim(),
     bookingStatus: document.getElementById("bookingStatus").value,
     phoneNumber: document.getElementById("phoneNumber").value.trim(),
-    weddingDate: document.getElementById("weddingDate").value,
-    weddingLocation: document.getElementById("weddingLocation").value.trim(),
-    preWeddingDate: document.getElementById("preWeddingDate").value,
-    preWeddingLocation: document.getElementById("preWeddingLocation").value.trim(),
-    receptionDate: document.getElementById("receptionDate").value,
-    receptionLocation: document.getElementById("receptionLocation").value.trim(),
-    extraFunctions,
+    eventType: document.getElementById("eventType").value.trim(),
+    eventDate: document.getElementById("eventDate").value,
+    eventLocation: document.getElementById("eventLocation").value.trim(),
+    extraFunctions: collectFunctionsFrom(functionsContainer),
     brideSidePhotographer: document.getElementById("brideSidePhotographer").value.trim(),
     brideSideVideographer: document.getElementById("brideSideVideographer").value.trim(),
     groomSidePhotographer: document.getElementById("groomSidePhotographer").value.trim(),
@@ -864,27 +980,18 @@ function buildRecordFromAddForm() {
     advanceAmount: parseMoney(advanceAmountInput.value),
     dueAmount: parseMoney(dueAmountInput.value),
   };
-
-  return {
-    ...draft,
-    eventLocation: deriveEventLocation(draft),
-  };
 }
 
 function buildRecordFromDetailForm(existingRecord) {
-  const extraFunctions = collectFunctionsFrom(detailFunctionsContainer);
-  const draft = {
+  return {
     ...existingRecord,
     customerName: detailCustomerNameInput.value.trim(),
     bookingStatus: detailBookingStatusInput.value,
     phoneNumber: detailPhoneNumberInput.value.trim(),
-    weddingDate: detailWeddingDateInput.value,
-    weddingLocation: detailWeddingLocationInput.value.trim(),
-    preWeddingDate: detailPreWeddingDateInput.value,
-    preWeddingLocation: detailPreWeddingLocationInput.value.trim(),
-    receptionDate: detailReceptionDateInput.value,
-    receptionLocation: detailReceptionLocationInput.value.trim(),
-    extraFunctions,
+    eventType: detailEventTypeInput.value.trim(),
+    eventDate: detailEventDateInput.value,
+    eventLocation: detailEventLocationInput.value.trim(),
+    extraFunctions: collectFunctionsFrom(detailFunctionsContainer),
     brideSidePhotographer: detailBrideSidePhotographerInput.value.trim(),
     brideSideVideographer: detailBrideSideVideographerInput.value.trim(),
     groomSidePhotographer: detailGroomSidePhotographerInput.value.trim(),
@@ -899,11 +1006,6 @@ function buildRecordFromDetailForm(existingRecord) {
     packageAmount: parseMoney(detailPackageAmountInput.value),
     advanceAmount: parseMoney(detailAdvanceAmountInput.value),
     dueAmount: parseMoney(detailDueAmountInput.value),
-  };
-
-  return {
-    ...draft,
-    eventLocation: deriveEventLocation(draft, existingRecord.eventLocation),
   };
 }
 
@@ -939,6 +1041,93 @@ backToEventsListBtn.addEventListener("click", () => {
   renderSelectedRecord();
 });
 
+function escapeCsvCell(value) {
+  const str = String(value ?? "");
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
+function exportRecordsToCsv() {
+  if (!records.length) {
+    window.alert("No bookings available to export.");
+    return;
+  }
+
+  const headers = [
+    "Customer Name",
+    "Booking Status",
+    "Phone Number",
+    "Event Type",
+    "Event Date",
+    "Location",
+    "Extra Functions",
+    "Coverage Type",
+    "Team Lead",
+    "Bride Side Photographer",
+    "Bride Side Videographer",
+    "Groom Side Photographer",
+    "Groom Side Videographer",
+    "Single Side Photographer",
+    "Single Side Videographer",
+    "Other Crew",
+    "Requirements",
+    "Package Amount",
+    "Advance Received",
+    "Due Amount",
+    "Work Status",
+    "Created At",
+  ];
+
+  const rows = records.map((record) => {
+    const extraSummary = (Array.isArray(record.extraFunctions) ? record.extraFunctions : [])
+      .map((fn) => {
+        const name = getFunctionNameValue(fn);
+        const date = getFunctionDateValue(fn);
+        const loc = getFunctionLocationValue(fn);
+        return [name, date, loc].filter(Boolean).join(" | ");
+      })
+      .join("; ");
+
+    return [
+      record.customerName,
+      record.bookingStatus,
+      record.phoneNumber,
+      record.eventType,
+      record.eventDate,
+      record.eventLocation,
+      extraSummary,
+      record.sideMode,
+      record.teamLeadName,
+      record.brideSidePhotographer,
+      record.brideSideVideographer,
+      record.groomSidePhotographer,
+      record.groomSideVideographer,
+      record.singleSidePhotographer,
+      record.singleSideVideographer,
+      record.otherCrewMembers,
+      record.additionalRequirements,
+      record.packageAmount,
+      record.advanceAmount,
+      record.dueAmount,
+      record.workStatus,
+      record.createdAt,
+    ]
+      .map(escapeCsvCell)
+      .join(",");
+  });
+
+  const csvContent = [headers.map(escapeCsvCell).join(","), ...rows].join("\r\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const today = new Date().toISOString().slice(0, 10);
+  link.href = url;
+  link.download = `vivah-bookings-${today}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 customerForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -946,7 +1135,7 @@ customerForm.addEventListener("submit", async (event) => {
     const recordPayload = buildRecordFromAddForm();
     await createRecord(recordPayload);
 
-    if (usingSupabase) {
+    if (usingRemote) {
       records = await fetchRecords();
     }
 
@@ -958,7 +1147,11 @@ customerForm.addEventListener("submit", async (event) => {
     resetForm();
     showView("view");
   } catch (error) {
-    notifyError("Unable to save event. Please check your Supabase setup.", error);
+    if (error && error.isAuthError) {
+      lockStudioView(error.message);
+      return;
+    }
+    notifyError("Unable to save event. Please check your connection and configuration.", error);
   }
 });
 
@@ -982,7 +1175,7 @@ eventDetailForm.addEventListener("submit", async (event) => {
     const updates = buildRecordFromDetailForm(existing);
     const updatedRecord = await updateRecord(selectedRecordId, updates);
 
-    if (usingSupabase) {
+    if (usingRemote) {
       records = await fetchRecords();
     } else if (updatedRecord) {
       records = records.map((record) => (record.id === selectedRecordId ? updatedRecord : record));
@@ -993,6 +1186,10 @@ eventDetailForm.addEventListener("submit", async (event) => {
     renderEventButtons(searchInput.value);
     renderSelectedRecord();
   } catch (error) {
+    if (error && error.isAuthError) {
+      lockStudioView(error.message);
+      return;
+    }
     notifyError("Unable to update event. Please try again.", error);
   }
 });
@@ -1028,7 +1225,7 @@ detailDeleteBtn.addEventListener("click", async () => {
   try {
     await deleteRecordById(selectedRecordId);
 
-    if (usingSupabase) {
+    if (usingRemote) {
       records = await fetchRecords();
       selectedRecordId = null;
       isDetailEditMode = false;
@@ -1039,6 +1236,10 @@ detailDeleteBtn.addEventListener("click", async () => {
       removeRecordInState(selectedRecordId);
     }
   } catch (error) {
+    if (error && error.isAuthError) {
+      lockStudioView(error.message);
+      return;
+    }
     notifyError("Unable to delete event. Please try again.", error);
   }
 });
@@ -1047,15 +1248,67 @@ searchInput.addEventListener("input", (event) => {
   renderEventButtons(event.target.value);
 });
 
+exportCsvBtn.addEventListener("click", exportRecordsToCsv);
+
+lockRegisterBtn.addEventListener("click", () => {
+  lockStudioView();
+});
+
+pinUnlockForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const enteredPin = studioPinInput.value.trim();
+  if (!enteredPin) {
+    setPinError("Please enter the Studio PIN.");
+    return;
+  }
+
+  setPinError("");
+  unlockPinBtn.disabled = true;
+  unlockPinBtn.textContent = "Unlocking...";
+
+  try {
+    activeStudioPin = enteredPin;
+    records = await fetchRecords();
+    setStoredPin(enteredPin, rememberPinCheckbox.checked);
+    studioPinInput.value = "";
+    lockRegisterBtn.classList.remove("hidden");
+    updateDashboardStats();
+    renderEventButtons();
+    renderSelectedRecord();
+    showView("dashboard");
+  } catch (error) {
+    clearStoredPin();
+    setPinError(error?.message || "Unable to verify Studio PIN. Check your Google Sheets Web App URL.");
+  } finally {
+    unlockPinBtn.disabled = false;
+    unlockPinBtn.textContent = "Unlock Register";
+  }
+});
+
 async function initialize() {
   createFunctionRow();
   computeDueFor(packageAmountInput, advanceAmountInput, dueAmountInput);
   updateSideModeUI("add", sideModeInput.value);
 
-  if (!usingSupabase) {
+  if (usingSheets) {
+    const savedPin = getStoredPin();
+    if (!savedPin) {
+      lockStudioView();
+      return;
+    }
+
+    try {
+      activeStudioPin = savedPin;
+      records = await fetchRecords();
+      lockRegisterBtn.classList.remove("hidden");
+    } catch (error) {
+      lockStudioView(error?.message || "Unable to unlock with saved PIN. Please enter it again.");
+      return;
+    }
+  } else if (!usingSupabase) {
     records = loadRecordsFromLocal();
     if (!hasValidSupabaseConfig) {
-      console.warn("Supabase not configured. Using local storage fallback.");
+      console.warn("Google Sheets / Supabase not configured. Using local storage fallback.");
     }
   } else {
     try {
