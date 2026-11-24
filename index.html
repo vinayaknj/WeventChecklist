@@ -10,7 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="./styles.css?v=20261125-2" />
+  <link rel="stylesheet" href="./styles.css?v=20261125-3" />
 </head>
 
 <body>
@@ -384,7 +384,21 @@
 
       <div id="eventsListView" class="events-list-view">
         <section class="events-list-pane">
+          <div id="monthHeaderBar" class="month-header-bar hidden">
+            <button type="button" id="backToMonthsBtn" class="btn btn-ghost">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              All Months
+            </button>
+            <div class="month-header-copy">
+              <h3 id="selectedMonthTitle">Bookings</h3>
+              <span id="selectedMonthCount" class="month-count-pill">0 bookings</span>
+            </div>
+          </div>
           <div id="emptyState" class="empty-state">No customer records yet.</div>
+          <div id="monthButtonsContainer" class="month-buttons"></div>
           <div id="eventButtonsContainer" class="event-buttons"></div>
         </section>
       </div>
@@ -617,7 +631,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./sheets-config.js?v=20261125-2"></script>
   <script src="./supabase-config.js?v=20261125-2"></script>
-  <script src="./app.js?v=20261125-2"></script>
+  <script src="./app.js?v=20261125-3"></script>
 </body>
 
 </html>

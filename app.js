@@ -9,6 +9,11 @@ const addFunctionBtn = document.getElementById("addFunctionBtn");
 const resetBtn = document.getElementById("resetBtn");
 const emptyState = document.getElementById("emptyState");
 const searchInput = document.getElementById("searchInput");
+const monthHeaderBar = document.getElementById("monthHeaderBar");
+const backToMonthsBtn = document.getElementById("backToMonthsBtn");
+const selectedMonthTitle = document.getElementById("selectedMonthTitle");
+const selectedMonthCount = document.getElementById("selectedMonthCount");
+const monthButtonsContainer = document.getElementById("monthButtonsContainer");
 const eventButtonsContainer = document.getElementById("eventButtonsContainer");
 const eventsListView = document.getElementById("eventsListView");
 
@@ -106,6 +111,7 @@ const usingRemote = usingSheets || usingSupabase;
 
 let activeStudioPin = "";
 let records = [];
+let selectedMonthKey = null;
 let selectedRecordId = null;
 let isDetailEditMode = false;
 let currentDetailRecord = null;
@@ -144,6 +150,12 @@ function applyNavigationState(state = { view: "dashboard" }) {
 
   if (targetView === "detail" && state.recordId) {
     selectedRecordId = state.recordId;
+    if (state.monthKey !== undefined) {
+      selectedMonthKey = state.monthKey;
+    } else {
+      const targetRecord = records.find((item) => item.id === state.recordId);
+      selectedMonthKey = targetRecord ? getMonthKeyForRecord(targetRecord) : selectedMonthKey;
+    }
     isDetailEditMode = false;
     renderEventButtons(searchInput.value);
     renderSelectedRecord();
@@ -152,6 +164,7 @@ function applyNavigationState(state = { view: "dashboard" }) {
   }
 
   if (targetView === "view") {
+    selectedMonthKey = state.monthKey || null;
     selectedRecordId = null;
     isDetailEditMode = false;
     renderEventButtons(searchInput.value);
@@ -165,6 +178,7 @@ function applyNavigationState(state = { view: "dashboard" }) {
     return;
   }
 
+  selectedMonthKey = null;
   selectedRecordId = null;
   isDetailEditMode = false;
   showView("dashboard");
@@ -229,6 +243,7 @@ function setPinError(message = "") {
 function lockStudioView(errorMessage = "") {
   clearStoredPin();
   records = [];
+  selectedMonthKey = null;
   selectedRecordId = null;
   isDetailEditMode = false;
   currentDetailRecord = null;
@@ -254,8 +269,8 @@ function formatDate(value) {
     return "-";
   }
 
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
+  const date = parseComparableDate(value);
+  if (!date) {
     return value;
   }
 
@@ -595,13 +610,100 @@ function parseComparableDate(value) {
     return null;
   }
 
-  const date = new Date(value);
+  const str = String(value).trim();
+  const isoDateMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(str);
+  if (isoDateMatch) {
+    const year = Number(isoDateMatch[1]);
+    const month = Number(isoDateMatch[2]);
+    const day = Number(isoDateMatch[3]);
+    const localDate = new Date(year, month - 1, day);
+    if (!Number.isNaN(localDate.getTime())) {
+      localDate.setHours(0, 0, 0, 0);
+      return localDate;
+    }
+  }
+
+  const date = new Date(str);
   if (Number.isNaN(date.getTime())) {
     return null;
   }
 
   date.setHours(0, 0, 0, 0);
   return date;
+}
+
+function getMainEventDateValue(record) {
+  if (!record) {
+    return "";
+  }
+
+  return record.eventDate || getPrimaryEventDate(record) || "";
+}
+
+function getMonthKeyForRecord(record) {
+  const dateObj = parseComparableDate(getMainEventDateValue(record));
+  if (!dateObj) {
+    return "unscheduled";
+  }
+
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function formatMonthTitle(monthKey, { short = false } = {}) {
+  if (!monthKey || monthKey === "all") {
+    return "All Bookings";
+  }
+
+  if (monthKey === "unscheduled") {
+    return short ? "No Date" : "Unscheduled Bookings";
+  }
+
+  const match = /^(\d{4})-(\d{2})$/.exec(monthKey);
+  if (!match) {
+    return monthKey;
+  }
+
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, 1);
+  if (short) {
+    return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  }
+
+  return `${date.toLocaleDateString("en-US", { month: "long", year: "numeric" })} Bookings`;
+}
+
+function compareRecordsByMainDate(a, b) {
+  const dateA = parseComparableDate(getMainEventDateValue(a));
+  const dateB = parseComparableDate(getMainEventDateValue(b));
+
+  if (dateA && dateB) {
+    const diff = dateA - dateB;
+    if (diff !== 0) {
+      return diff;
+    }
+  } else if (dateA) {
+    return -1;
+  } else if (dateB) {
+    return 1;
+  }
+
+  const nameCompare = (a.customerName || "").localeCompare(b.customerName || "");
+  if (nameCompare !== 0) {
+    return nameCompare;
+  }
+
+  return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+}
+
+function compareMonthKeys(a, b) {
+  if (a === "unscheduled") {
+    return 1;
+  }
+  if (b === "unscheduled") {
+    return -1;
+  }
+  return a.localeCompare(b);
 }
 
 function getEventDateEntries(record) {
@@ -723,14 +825,13 @@ function updateDashboardStats() {
   now.setHours(0, 0, 0, 0);
 
   const upcoming = records.filter((record) => {
-    const date = getPrimaryEventDate(record);
+    const date = getMainEventDateValue(record);
     if (!date) {
       return false;
     }
 
-    const eventDate = new Date(date);
-    eventDate.setHours(0, 0, 0, 0);
-    return eventDate >= now;
+    const eventDate = parseComparableDate(date);
+    return eventDate ? eventDate >= now : false;
   }).length;
 
   const duePending = records.filter((record) => parseMoney(record.dueAmount) > 0).length;
@@ -740,33 +841,176 @@ function updateDashboardStats() {
   statDueEvents.textContent = String(duePending);
 }
 
-function getFilteredRecords(searchText = "") {
+function getFilteredRecords(searchText = "", monthKey = null) {
   const needle = searchText.trim().toLowerCase();
-  const filtered = !needle
-    ? records
-    : records.filter((record) => {
-        const extraLocations = Array.isArray(record.extraFunctions)
-          ? record.extraFunctions.map((fn) => `${getFunctionNameValue(fn)} ${getFunctionLocationValue(fn)}`).join(" ")
-          : "";
-        const haystack = [
-          record.customerName,
-          record.phoneNumber,
-          record.eventType,
-          record.eventLocation,
-          extraLocations,
-        ]
-          .join(" ")
-          .toLowerCase();
-        return haystack.includes(needle);
-      });
+  const filtered = records.filter((record) => {
+    if (monthKey && monthKey !== "all" && getMonthKeyForRecord(record) !== monthKey) {
+      return false;
+    }
 
-  return filtered.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    if (!needle) {
+      return true;
+    }
+
+    const extraLocations = Array.isArray(record.extraFunctions)
+      ? record.extraFunctions.map((fn) => `${getFunctionNameValue(fn)} ${getFunctionLocationValue(fn)}`).join(" ")
+      : "";
+    const haystack = [
+      record.customerName,
+      record.phoneNumber,
+      record.eventType,
+      record.eventLocation,
+      extraLocations,
+    ]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(needle);
+  });
+
+  return filtered.slice().sort(compareRecordsByMainDate);
+}
+
+function buildMonthGroups() {
+  const groups = new Map();
+  records.forEach((record) => {
+    const key = getMonthKeyForRecord(record);
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key).push(record);
+  });
+
+  const sortedKeys = [...groups.keys()].sort(compareMonthKeys);
+  return sortedKeys.map((key) => {
+    const items = groups.get(key).slice().sort(compareRecordsByMainDate);
+    return { key, items };
+  });
+}
+
+function renderMonthButtons() {
+  monthButtonsContainer.innerHTML = "";
+  const groups = buildMonthGroups();
+
+  groups.forEach(({ key, items }) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "month-button";
+
+    const top = document.createElement("div");
+    top.className = "month-button-top";
+
+    const tag = document.createElement("span");
+    tag.className = "month-button-tag";
+    tag.textContent = formatMonthTitle(key, { short: true });
+
+    const count = document.createElement("span");
+    count.className = "month-count-pill";
+    count.textContent = `${items.length} ${items.length === 1 ? "Booking" : "Bookings"}`;
+
+    top.append(tag, count);
+
+    const title = document.createElement("p");
+    title.className = "month-button-title";
+    title.textContent = formatMonthTitle(key);
+
+    const firstDate = getMainEventDateValue(items[0]);
+    const lastDate = getMainEventDateValue(items[items.length - 1]);
+    const dueCount = items.filter((item) => parseMoney(item.dueAmount) > 0).length;
+    const metaParts = [];
+    if (firstDate && lastDate && firstDate !== lastDate) {
+      metaParts.push(`${formatDate(firstDate)} – ${formatDate(lastDate)}`);
+    } else if (firstDate) {
+      metaParts.push(formatDate(firstDate));
+    }
+    if (dueCount > 0) {
+      metaParts.push(`${dueCount} pending ${dueCount === 1 ? "payment" : "payments"}`);
+    }
+
+    const meta = document.createElement("p");
+    meta.className = "month-button-meta";
+    meta.textContent = metaParts.length ? metaParts.join(" • ") : "No event date set";
+
+    button.append(top, title, meta);
+    button.addEventListener("click", () => {
+      navigateTo({ view: "view", monthKey: key, recordId: null });
+    });
+
+    monthButtonsContainer.appendChild(button);
+  });
+
+  if (groups.length > 1) {
+    const allBtn = document.createElement("button");
+    allBtn.type = "button";
+    allBtn.className = "month-button month-button-all";
+
+    const top = document.createElement("div");
+    top.className = "month-button-top";
+
+    const tag = document.createElement("span");
+    tag.className = "month-button-tag";
+    tag.textContent = "Overview";
+
+    const count = document.createElement("span");
+    count.className = "month-count-pill";
+    count.textContent = `${records.length} Total`;
+
+    top.append(tag, count);
+
+    const title = document.createElement("p");
+    title.className = "month-button-title";
+    title.textContent = "All Bookings";
+
+    const meta = document.createElement("p");
+    meta.className = "month-button-meta";
+    meta.textContent = "View every booking across all months sorted by main date.";
+
+    allBtn.append(top, title, meta);
+    allBtn.addEventListener("click", () => {
+      navigateTo({ view: "view", monthKey: "all", recordId: null });
+    });
+
+    monthButtonsContainer.appendChild(allBtn);
+  }
 }
 
 function renderEventButtons(searchText = "") {
-  const filtered = getFilteredRecords(searchText);
+  const needle = searchText.trim();
+  const isMonthFolderScreen = !selectedMonthKey && !needle;
 
+  monthButtonsContainer.innerHTML = "";
   eventButtonsContainer.innerHTML = "";
+
+  if (isMonthFolderScreen) {
+    monthHeaderBar.classList.add("hidden");
+    eventButtonsContainer.classList.add("hidden");
+
+    if (!records.length) {
+      monthButtonsContainer.classList.add("hidden");
+      emptyState.style.display = "block";
+      emptyState.textContent = "No customer records yet.";
+      return;
+    }
+
+    emptyState.style.display = "none";
+    monthButtonsContainer.classList.remove("hidden");
+    renderMonthButtons();
+    return;
+  }
+
+  monthButtonsContainer.classList.add("hidden");
+  eventButtonsContainer.classList.remove("hidden");
+
+  const activeMonthFilter = selectedMonthKey || "all";
+  const filtered = getFilteredRecords(searchText, activeMonthFilter);
+
+  if (selectedMonthKey) {
+    monthHeaderBar.classList.remove("hidden");
+    selectedMonthTitle.textContent = formatMonthTitle(selectedMonthKey);
+    selectedMonthCount.textContent = `${filtered.length} ${filtered.length === 1 ? "Booking" : "Bookings"}`;
+  } else {
+    monthHeaderBar.classList.add("hidden");
+  }
+
   emptyState.style.display = filtered.length ? "none" : "block";
   if (!records.length) {
     emptyState.textContent = "No customer records yet.";
@@ -811,7 +1055,8 @@ function renderEventButtons(searchText = "") {
 
     button.append(name, date, location, statusWrap);
     button.addEventListener("click", () => {
-      navigateTo({ view: "detail", recordId: record.id });
+      const monthKey = selectedMonthKey || getMonthKeyForRecord(record);
+      navigateTo({ view: "detail", monthKey, recordId: record.id });
     });
 
     eventButtonsContainer.appendChild(button);
@@ -1075,7 +1320,14 @@ detailSideModeInput.addEventListener("change", () => updateSideModeUI("detail", 
 resetBtn.addEventListener("click", resetForm);
 openAddEventBtn.addEventListener("click", () => navigateTo({ view: "add" }));
 openViewEventsBtn.addEventListener("click", () => {
-  navigateTo({ view: "view", recordId: null });
+  navigateTo({ view: "view", monthKey: null, recordId: null });
+});
+backToMonthsBtn.addEventListener("click", () => {
+  if (window.history.state && window.history.state.view === "view" && window.history.state.monthKey) {
+    window.history.back();
+    return;
+  }
+  navigateTo({ view: "view", monthKey: null, recordId: null }, { replace: true });
 });
 backToDashboardFromAddBtn.addEventListener("click", () => {
   if (window.history.state && window.history.state.view === "add") {
@@ -1085,18 +1337,18 @@ backToDashboardFromAddBtn.addEventListener("click", () => {
   navigateTo({ view: "dashboard" }, { replace: true });
 });
 backToDashboardFromViewBtn.addEventListener("click", () => {
-  if (window.history.state && window.history.state.view === "view") {
+  if (window.history.state && window.history.state.view === "view" && !window.history.state.monthKey) {
     window.history.back();
     return;
   }
-  navigateTo({ view: "dashboard" }, { replace: true });
+  navigateTo({ view: "dashboard" });
 });
 backToEventsListBtn.addEventListener("click", () => {
   if (window.history.state && window.history.state.view === "detail") {
     window.history.back();
     return;
   }
-  navigateTo({ view: "view", recordId: null }, { replace: true });
+  navigateTo({ view: "view", monthKey: selectedMonthKey, recordId: null }, { replace: true });
 });
 
 window.addEventListener("popstate", (event) => {
@@ -1203,19 +1455,19 @@ customerForm.addEventListener("submit", async (event) => {
 
   try {
     const recordPayload = buildRecordFromAddForm();
-    await createRecord(recordPayload);
+    const createdRecord = await createRecord(recordPayload);
 
     if (usingRemote) {
       records = await fetchRecords();
     }
 
+    const targetMonthKey = getMonthKeyForRecord(createdRecord || recordPayload);
     selectedRecordId = null;
     isDetailEditMode = false;
     updateDashboardStats();
-    renderEventButtons(searchInput.value);
     renderSelectedRecord();
     resetForm();
-    navigateTo({ view: "view", recordId: null }, { replace: true });
+    navigateTo({ view: "view", monthKey: targetMonthKey, recordId: null }, { replace: true });
   } catch (error) {
     if (error && error.isAuthError) {
       lockStudioView(error.message);
@@ -1307,7 +1559,7 @@ detailDeleteBtn.addEventListener("click", async () => {
     }
 
     if (window.history.state && window.history.state.view === "detail") {
-      window.history.replaceState({ view: "view", recordId: null }, "");
+      window.history.replaceState({ view: "view", monthKey: selectedMonthKey, recordId: null }, "");
     }
   } catch (error) {
     if (error && error.isAuthError) {
